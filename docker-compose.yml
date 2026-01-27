@@ -28,6 +28,8 @@ services:
       - db
     volumes:
       - /srv/enquetes/app:/app/static/uploads
+    ports:
+      - 8000:8000
 
   db:
     container_name: db
@@ -44,3 +46,5 @@ services:
       - MYSQL_PASSWORD=xxxxxxxx
     volumes:
       - /srv/enquetes/db:/var/lib/mysql
+    ports:
+      - 3306:3306

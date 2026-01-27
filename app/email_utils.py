@@ -1,23 +1,27 @@
 import smtplib
+import ssl
 import os
+import logging
+import traceback
 from email.message import EmailMessage
+
+# --- CONFIGURAÇÃO DE LOGS ---
+# Isso garante que os logs apareçam no 'docker logs'
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("email_utils")
 
 # Configurações de SMTP
 SMTP_HOST = os.getenv("SMTP_HOST")
-# Garante que seja inteiro, fallback para 25 se não definido
-SMTP_PORT = int(os.getenv("SMTP_PORT", 25)) 
+# Converte para inteiro, padrão 587 se não definido
+SMTP_PORT = int(os.getenv("SMTP_PORT", 587)) 
 SMTP_USER = os.getenv("SMTP_USER")
 SMTP_PASSWORD = os.getenv("SMTP_PASSWORD")
 SMTP_FROM = os.getenv("SMTP_FROM")
 
 def _get_html_template(base_url: str, title: str, body_content: str, action_url: str = None, action_text: str = None):
-    """
-    Gera um HTML responsivo, com logo, rodapé LGPD e TEXTO CENTRALIZADO.
-    """
     clean_base_url = base_url.rstrip("/")
     logo_url = f"{clean_base_url}/static/logo.png"
     
-    # Botão de ação (Centralizado)
     button_html = ""
     if action_url and action_text:
         button_html = f"""
@@ -25,15 +29,7 @@ def _get_html_template(base_url: str, title: str, body_content: str, action_url:
             <tbody>
             <tr>
                 <td align="center">
-                <table role="presentation" border="0" cellpadding="0" cellspacing="0">
-                    <tbody>
-                    <tr>
-                        <td align="center">
-                            <a href="{action_url}" target="_blank" style="background-color: #212529; border-radius: 50px; color: #ffffff; display: inline-block; padding: 14px 30px; text-decoration: none; font-weight: bold; font-size: 16px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); text-align: center;">{action_text}</a>
-                        </td>
-                    </tr>
-                    </tbody>
-                </table>
+                    <a href="{action_url}" target="_blank" style="background-color: #212529; border-radius: 50px; color: #ffffff; display: inline-block; padding: 14px 30px; text-decoration: none; font-weight: bold; font-size: 16px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); text-align: center;">{action_text}</a>
                 </td>
             </tr>
             </tbody>
@@ -47,91 +43,31 @@ def _get_html_template(base_url: str, title: str, body_content: str, action_url:
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
         <title>{title}</title>
-        <style>
-        /* Reset de estilos */
-        img {{ border: none; -ms-interpolation-mode: bicubic; max-width: 100%; }}
-        body {{ background-color: #f6f6f6; font-family: sans-serif; -webkit-font-smoothing: antialiased; font-size: 14px; line-height: 1.4; margin: 0; padding: 0; -ms-text-size-adjust: 100%; -webkit-text-size-adjust: 100%; }}
-        table {{ border-collapse: separate; mso-table-lspace: 0pt; mso-table-rspace: 0pt; width: 100%; }}
-        table td {{ font-family: sans-serif; font-size: 14px; vertical-align: top; }}
-
-        /* Estilos do Container */
-        .body {{ background-color: #f6f6f6; width: 100%; }}
-        .container {{ display: block; margin: 0 auto !important; max-width: 580px; padding: 10px; width: 580px; }}
-        .content {{ box-sizing: border-box; display: block; margin: 0 auto; max-width: 580px; padding: 10px; }}
-
-        /* Estilos do Cartão Principal */
-        .main {{ background: #ffffff; border-radius: 12px; width: 100%; overflow: hidden; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }}
-        .wrapper {{ box-sizing: border-box; padding: 40px 30px; text-align: center; }} 
-        
-        .footer {{ clear: both; margin-top: 10px; text-align: center; width: 100%; }}
-        .footer td, .footer p, .footer span, .footer a {{ color: #999999; font-size: 12px; text-align: center; }}
-
-        h1, h2, h3 {{ color: #000000; font-family: sans-serif; font-weight: 700; line-height: 1.4; margin: 0; margin-bottom: 20px; text-align: center; }}
-        h1 {{ font-size: 24px; margin-bottom: 25px; }}
-        p, ul, ol {{ font-family: sans-serif; font-size: 16px; font-weight: normal; margin: 0; margin-bottom: 20px; color: #555555; text-align: center; }}
-        
-        .header-brand {{ background-color: #212529; padding: 30px 0; text-align: center; }}
-        .header-title {{ color: white; font-size: 18px; margin-top: 10px; letter-spacing: 1px; text-transform: uppercase; font-weight: 700; text-align: center; }}
-
-        @media only screen and (max-width: 620px) {{
-            table[class=body] h1 {{ font-size: 26px !important; margin-bottom: 15px !important; }}
-            table[class=body] p, table[class=body] ul, table[class=body] ol, table[class=body] td, table[class=body] span, table[class=body] a {{ font-size: 16px !important; }}
-            table[class=body] .wrapper {{ padding: 25px !important; }}
-            table[class=body] .content {{ padding: 0 !important; }}
-            table[class=body] .container {{ padding: 0 !important; width: 100% !important; }}
-            table[class=body] .main {{ border-radius: 0 !important; }}
-            table[class=body] .btn table {{ width: 100% !important; }}
-            table[class=body] .btn a {{ width: 100% !important; display: block !important; }}
-        }}
-        </style>
     </head>
-    <body>
-        <table role="presentation" border="0" cellpadding="0" cellspacing="0" class="body">
+    <body style="background-color: #f6f6f6; font-family: sans-serif; font-size: 14px; line-height: 1.4; margin: 0; padding: 0;">
+        <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="width: 100%; background-color: #f6f6f6;">
         <tr>
             <td>&nbsp;</td>
-            <td class="container">
-            <div class="content">
-                <table role="presentation" class="main">
+            <td style="display: block; margin: 0 auto !important; max-width: 580px; padding: 10px; width: 580px;">
+            <div style="box-sizing: border-box; display: block; margin: 0 auto; max-width: 580px; padding: 10px;">
+                <table role="presentation" style="background: #ffffff; border-radius: 12px; width: 100%; overflow: hidden; box-shadow: 0 5px 15px rgba(0,0,0,0.05);">
                     <tr>
-                        <td class="header-brand">
+                        <td style="background-color: #212529; padding: 30px 0; text-align: center;">
                             <img src="{logo_url}" alt="Logo" width="100" style="width: 100px; height: auto; display: block; margin: 0 auto; filter: brightness(0) invert(1);" />
-                            <div class="header-title">Sistema de Enquetes</div>
+                            <div style="color: white; font-size: 18px; margin-top: 10px; letter-spacing: 1px; text-transform: uppercase; font-weight: 700; text-align: center;">Sistema de Enquetes</div>
                         </td>
                     </tr>
                     <tr>
-                        <td class="wrapper">
-                        <table role="presentation" border="0" cellpadding="0" cellspacing="0">
-                            <tr>
-                            <td align="center">
-                                <h1>{title}</h1>
-                                <p>{body_content}</p>
-                                <br>
-                                {button_html}
-                                <br><br>
-                                <p class="text-muted" style="font-size: 14px;">Se você não solicitou esta ação, por favor ignore este e-mail.</p>
-                            </td>
-                            </tr>
-                        </table>
+                        <td style="box-sizing: border-box; padding: 40px 30px; text-align: center;">
+                            <h1 style="color: #000000; font-size: 24px; margin-bottom: 25px; text-align: center;">{title}</h1>
+                            <p style="font-family: sans-serif; font-size: 16px; font-weight: normal; margin: 0; margin-bottom: 20px; color: #555555; text-align: center;">{body_content}</p>
+                            <br>
+                            {button_html}
+                            <br><br>
+                            <p style="color: #999999; font-size: 12px; text-align: center;">Se você não solicitou esta ação, ignore este e-mail.</p>
                         </td>
                     </tr>
                 </table>
-                <div class="footer">
-                <table role="presentation" border="0" cellpadding="0" cellspacing="0">
-                    <tr>
-                    <td class="content-block">
-                        <span class="apple-link"><strong>Sistema de Enquetes Inteligente</strong></span>
-                        <br> Todos os direitos reservados &copy; 2026.
-                    </td>
-                    </tr>
-                    <tr>
-                    <td class="content-block" style="padding-top: 15px;">
-                        <strong>Aviso de Privacidade (LGPD):</strong><br>
-                        Respeitamos sua privacidade e protegemos seus dados pessoais conforme a Lei Geral de Proteção de Dados. 
-                        Este e-mail é transacional e essencial para a segurança da sua conta.
-                    </td>
-                    </tr>
-                </table>
-                </div>
             </div>
             </td>
             <td>&nbsp;</td>
@@ -146,23 +82,19 @@ def send_verification_email(to_email: str, token: str, base_url: str):
     link = f"{clean_base_url}/auth/verify/{token}"
     
     msg = EmailMessage()
-    msg['Subject'] = "Confirme seu cadastro - Sistema de Enquetes"
+    msg['Subject'] = "Confirme seu cadastro"
     msg['From'] = SMTP_FROM
     msg['To'] = to_email
-    
-    body_text = "Estamos muito felizes em ter você conosco! Para garantir a segurança da sua conta e começar a criar enquetes, por favor, confirme seu endereço de e-mail clicando no botão abaixo."
     
     html_content = _get_html_template(
         base_url=clean_base_url,
         title="Bem-vindo(a)!",
-        body_content=body_text,
+        body_content="Confirme seu e-mail para ativar sua conta.",
         action_url=link,
-        action_text="Confirmar E-mail Agora"
+        action_text="Confirmar Agora"
     )
-    
-    msg.set_content(f"Clique no link para confirmar: {link}")
+    msg.set_content(f"Link: {link}")
     msg.add_alternative(html_content, subtype='html')
-    
     _send_email(msg, to_email)
 
 def send_reset_password_email(to_email: str, token: str, base_url: str):
@@ -170,40 +102,73 @@ def send_reset_password_email(to_email: str, token: str, base_url: str):
     link = f"{clean_base_url}/auth/reset-password/{token}"
     
     msg = EmailMessage()
-    msg['Subject'] = "Recuperação de Senha - Sistema de Enquetes"
+    msg['Subject'] = "Recuperação de Senha"
     msg['From'] = SMTP_FROM
     msg['To'] = to_email
-    
-    body_text = "Recebemos uma solicitação para redefinir a senha da sua conta. Se foi você, clique no botão abaixo para criar uma nova senha. Este link expira em 30 minutos."
     
     html_content = _get_html_template(
         base_url=clean_base_url,
         title="Esqueceu sua senha?",
-        body_content=body_text,
+        body_content="Clique abaixo para redefinir.",
         action_url=link,
-        action_text="Redefinir Minha Senha"
+        action_text="Redefinir Senha"
     )
-    
-    msg.set_content(f"Para redefinir sua senha, acesse: {link}")
+    msg.set_content(f"Link: {link}")
     msg.add_alternative(html_content, subtype='html')
-    
     _send_email(msg, to_email)
 
 def _send_email(msg, to_email):
+    logger.info("="*40)
+    logger.info(f" INICIANDO PROCESSO DE ENVIO: {to_email}")
+    logger.info(f" Config: HOST={SMTP_HOST} | PORT={SMTP_PORT} | USER={SMTP_USER}")
+    
     try:
-        with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as server:
-            # LÓGICA DE SEGURANÇA HÍBRIDA
+        # 1. CONEXÃO
+        logger.info("[1/6] Conectando ao servidor SMTP...")
+        server = smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=20)
+        server.set_debuglevel(1) # Ativa o debug nativo do SMTP (mostra conversa com o servidor)
+        
+        # 2. EHLO INICIAL
+        logger.info("[2/6] Enviando EHLO...")
+        server.ehlo()
+
+        # 3. STARTTLS (CRIPTOGRAFIA)
+        # Lógica: Se for porta 587 OU se o servidor anunciar suporte a STARTTLS, ativa.
+        if SMTP_PORT == 587 or server.has_extn("STARTTLS"):
+            logger.info("[3/6] Iniciando STARTTLS...")
+            context = ssl.create_default_context()
             
-            # Se for porta 587, assume que precisa de TLS
-            if SMTP_PORT == 587:
-                server.starttls()
+            # --- NOTA DE DEBUG: Se tiver erro de certificado (SSL), descomente as linhas abaixo ---
+            # context.check_hostname = False
+            # context.verify_mode = ssl.CERT_NONE
+            
+            server.starttls(context=context)
+            logger.info("[3/6] STARTTLS concluído. Reenviando EHLO...")
+            server.ehlo()
+        else:
+            logger.info("[3/6] Pulo do STARTTLS (Porta não é 587 e servidor não pediu).")
 
-            # Só tenta autenticar (login) se as variáveis de ambiente existirem
-            # Se você comentou no docker-compose, elas serão None, e o login será pulado
-            if SMTP_USER and SMTP_PASSWORD:
-                server.login(SMTP_USER, SMTP_PASSWORD)
+        # 4. AUTENTICAÇÃO
+        if SMTP_USER and SMTP_PASSWORD:
+            logger.info("[4/6] Credenciais detectadas. Tentando LOGIN...")
+            server.login(SMTP_USER, SMTP_PASSWORD)
+            logger.info("[4/6] Login realizado com SUCESSO.")
+        else:
+            logger.info("[4/6] Sem credenciais configuradas. Modo RELAY (Anônimo/IP).")
 
-            server.send_message(msg)
-            print(f"E-mail enviado para {to_email}")
+        # 5. ENVIO
+        logger.info("[5/6] Enviando a mensagem...")
+        server.send_message(msg)
+        logger.info("[6/6] Mensagem ACEITA pelo servidor.")
+
+        server.quit()
+        logger.info(" EMAIL ENVIADO COM SUCESSO!")
+        logger.info("="*40)
+        
     except Exception as e:
-        print(f"Erro ao enviar e-mail: {e}")
+        logger.error("!!!" + "="*30 + "!!!")
+        logger.error(" ERRO FATAL NO ENVIO DE E-MAIL")
+        logger.error(f" Mensagem de erro: {e}")
+        logger.error(" Stack Trace:")
+        logger.error(traceback.format_exc())
+        logger.error("!!!" + "="*30 + "!!!")

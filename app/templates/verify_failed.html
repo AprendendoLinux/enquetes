@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Link Inválido</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <style>
+    body { background: #f0f2f5; font-family: 'Segoe UI', system-ui, sans-serif; height: 100vh; display: flex; align-items: center; justify-content: center; }
+    .card-msg { border: none; border-radius: 24px; box-shadow: 0 10px 40px rgba(0,0,0,0.08); max-width: 500px; width: 90%; }
+    .icon-circle { width: 80px; height: 80px; background: #f8d7da; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem auto; }
+  </style>
+</head>
+<body>
+  <div class="card card-msg text-center p-5">
+    <div class="icon-circle text-danger">
+      <i class="bi bi-x-lg fs-1"></i>
+    </div>
+    <h3 class="fw-bold mb-3">Link Inválido ou Expirado</h3>
+    <p class="text-muted mb-4">
+      Não foi possível verificar sua conta. O link pode ter expirado ou já foi utilizado.
+    </p>
+    <a href="/login" class="btn btn-outline-dark rounded-pill px-4">Tentar Login</a>
+  </div>
+</body>
+</html>

@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Criar Nova Enquete</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <style>
+    body { background-color: #f0f2f5; font-family: 'Inter', system-ui, sans-serif; }
+    .card-create { border: none; border-radius: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+    .card-header-create { background-color: #fff; border-bottom: 1px solid #eee; border-radius: 15px 15px 0 0; padding: 1.5rem; }
+    .form-label { font-weight: 600; color: #444; }
+    .btn-remove-option { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); color: #dc3545; cursor: pointer; z-index: 10; font-size: 1.2rem; }
+    .option-input-group { position: relative; }
+    
+    /* Animação suave */
+    .fade-in { animation: fadeIn 0.3s ease-in; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+    
+    /* Estilo dos blocos ocultos */
+    .hidden-section { display: none; background: #fff; border: 1px solid #dee2e6; border-radius: 10px; padding: 15px; margin-bottom: 15px; border-left: 5px solid #212529; }
+  </style>
+</head>
+<body class="py-5">
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-lg-7">
+        
+        <div class="card card-create">
+          <div class="card-header-create text-center">
+          <h4 class="mb-0 fw-bold text-dark">
+            <i class="bi bi-bar-chart-line-fill me-2"></i>Criar Enquete
+          </h4>
+            <p class="text-muted mt-2">Preencha os dados abaixo para publicar sua votação</p>
+          </div>
+          
+          <div class="card-body p-4 p-md-5">
+            <form action="/create_poll" method="post" enctype="multipart/form-data">
+              
+              <div class="mb-4">
+                <label for="title" class="form-label">Título da Enquete</label>
+                <input type="text" class="form-control form-control-lg shadow-sm" id="title" name="title" placeholder="Ex: Qual sua cor favorita?" required>
+              </div>
+
+              <div class="mb-4 p-3 border rounded bg-light">
+                <h6 class="text-uppercase text-muted small fw-bold mb-3">Configurações da Enquete</h6>
+                
+                <div class="form-check form-switch mb-3">
+                  <input class="form-check-input" type="checkbox" id="multiple_choice" name="multiple_choice" value="true">
+                  <label class="form-check-label fw-semibold" for="multiple_choice">Permitir seleção de várias opções</label>
+                </div>
+
+                <div class="form-check form-switch mb-3">
+                  <input class="form-check-input" type="checkbox" id="check_ip" name="check_ip" value="true" checked>
+                  <label class="form-check-label fw-semibold" for="check_ip">
+                    Segurança Reforçada (IP + Cache)
+                    <div class="text-muted small fw-normal">Bloqueia múltiplos votos do mesmo Wi-Fi.</div>
+                  </label>
+                </div>
+
+                <hr class="my-3 opacity-25">
+
+                <div class="form-check form-switch mb-3">
+                  <input class="form-check-input" type="checkbox" id="toggle-description">
+                  <label class="form-check-label fw-semibold" for="toggle-description">Adicionar Texto Explicativo</label>
+                </div>
+
+                <div id="description-section" class="hidden-section fade-in">
+                  <label for="description" class="form-label small mb-1">Texto Explicativo</label>
+                  <textarea class="form-control shadow-sm" id="description" name="description" rows="4" placeholder="Escreva aqui os detalhes, regras ou contexto da enquete..."></textarea>
+                  <div class="form-text small">Este texto aparecerá em um botão 'Saiba mais' na votação.</div>
+                </div>
+
+                <div class="form-check form-switch mb-3">
+                  <input class="form-check-input" type="checkbox" id="toggle-deadline">
+                  <label class="form-check-label fw-semibold" for="toggle-deadline">Definir Hora do Término</label>
+                </div>
+
+                <div id="deadline-section" class="hidden-section fade-in">
+                  <label for="deadline" class="form-label small mb-1">Data e Hora de Encerramento</label>
+                  <input type="datetime-local" class="form-control shadow-sm" id="deadline" name="deadline">
+                  <div class="form-text small">A votação será bloqueada automaticamente após esse horário.</div>
+                </div>
+
+                <div class="form-check form-switch">
+                  <input class="form-check-input" type="checkbox" id="toggle-image">
+                  <label class="form-check-label fw-semibold" for="toggle-image">Escolher capa para Redes Sociais</label>
+                </div>
+
+                <div id="image-section" class="hidden-section fade-in mt-3">
+                  <label for="image_file" class="form-label small mb-1">Imagem de Capa (Opcional)</label>
+                  <input type="file" class="form-control shadow-sm" id="image_file" name="image_file" accept="image/*">
+                  <div class="form-text small">Essa imagem aparecerá ao compartilhar o link no WhatsApp/Telegram.</div>
+                </div>
+
+              </div>
+
+              <hr class="my-4 opacity-50">
+
+              <div class="mb-4">
+                <label class="form-label d-flex justify-content-between align-items-center">
+                  Opções de Resposta
+                  <button type="button" id="btn-add-option" class="btn btn-sm btn-outline-dark rounded-pill">
+                    <i class="bi bi-plus-lg me-1"></i> Adicionar Opção
+                  </button>
+                </label>
+                
+                <div id="options-container">
+                  <div class="mb-2 option-input-group">
+                    <input type="text" name="options" class="form-control pe-5" placeholder="Opção 1" required>
+                  </div>
+                  <div class="mb-2 option-input-group">
+                    <input type="text" name="options" class="form-control pe-5" placeholder="Opção 2" required>
+                  </div>
+                </div>
+              </div>
+
+              <div class="d-grid gap-2 pt-3">
+                <button type="submit" class="btn btn-dark btn-lg fw-bold shadow">Publicar Enquete</button>
+                <a href="/dashboard" class="btn btn-link text-decoration-none text-muted">Cancelar</a>
+              </div>
+            </form>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // --- Lógica das Opções Dinâmicas (Mantida) ---
+      const container = document.getElementById('options-container');
+      const addButton = document.getElementById('btn-add-option');
+      let optionCount = 2;
+
+      addButton.addEventListener('click', function() {
+        optionCount++;
+        const div = document.createElement('div');
+        div.className = 'mb-2 option-input-group position-relative fade-in';
+        
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.name = 'options';
+        input.className = 'form-control pe-5';
+        input.placeholder = `Opção ${optionCount}`;
+        input.required = true;
+
+        const removeBtn = document.createElement('i');
+        removeBtn.className = 'bi bi-x-circle-fill btn-remove-option';
+        
+        removeBtn.addEventListener('click', function() {
+           const currentInputs = container.querySelectorAll('input[name="options"]');
+           if (currentInputs.length > 2) {
+               div.remove();
+           }
+        });
+
+        div.appendChild(input);
+        div.appendChild(removeBtn);
+        container.appendChild(div);
+        input.focus();
+      });
+
+      // --- NOVA LÓGICA: Controles Independentes ---
+      
+      // 1. Controle da Descrição (NOVO)
+      const toggleDescription = document.getElementById('toggle-description');
+      const descriptionSection = document.getElementById('description-section');
+      const descriptionInput = document.getElementById('description');
+
+      toggleDescription.addEventListener('change', function() {
+        if (this.checked) {
+            descriptionSection.style.display = 'block';
+        } else {
+            descriptionSection.style.display = 'none';
+            descriptionInput.value = ''; // Limpa o valor ao desmarcar
+        }
+      });
+
+      // 2. Controle do Prazo
+      const toggleDeadline = document.getElementById('toggle-deadline');
+      const deadlineSection = document.getElementById('deadline-section');
+      const deadlineInput = document.getElementById('deadline');
+
+      toggleDeadline.addEventListener('change', function() {
+        if (this.checked) {
+          deadlineSection.style.display = 'block';
+        } else {
+          deadlineSection.style.display = 'none';
+          deadlineInput.value = ''; // Limpa o valor ao desmarcar
+        }
+      });
+
+      // 3. Controle da Imagem
+      const toggleImage = document.getElementById('toggle-image');
+      const imageSection = document.getElementById('image-section');
+      const imageInput = document.getElementById('image_file');
+
+      toggleImage.addEventListener('change', function() {
+        if (this.checked) {
+          imageSection.style.display = 'block';
+        } else {
+          imageSection.style.display = 'none';
+          imageInput.value = ''; // Limpa o valor ao desmarcar
+        }
+      });
+    });
+  </script>
+</body>
+</html>

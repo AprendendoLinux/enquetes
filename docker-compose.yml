@@ -17,30 +17,30 @@ services:
       - DB_USER=enquetes
       - DB_PASSWORD=xxxxxxxx
       - DB_NAME=enquetes
-      - DB_HOST=db_server
-      - SECRET_KEY='xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
+      - DB_HOST=db
+      - SECRET_KEY=UJ7vN4pR9xFla2qL8tW5hZ3cF6bY1gD0eA_kP!rT@mV+nQvjX
       - SMTP_HOST=smtp.gmail.com
       - SMTP_PORT=587
       - SMTP_USER=seuemail@gmail.com
       - SMTP_PASSWORD=xxxxxxxxxxxxxx
-      - SMTP_FROM=No-Reply <seuemail@gmail.com>
+      - SMTP_FROM=Sistema de Enquetes <seuemail@gmail.com>
     depends_on:
-      - db_server
+      - db
     volumes:
-      - /srv/app:/app/static/uploads
+      - /srv/enquetes/app:/app/static/uploads
 
-  db_server:
-    container_name: db_server
-    hostname: db_server
+  db:
+    container_name: db
+    hostname: db
     image: mysql:latest
     restart: always
     networks:
       - app-network
     environment:
-      TZ: America/Sao_Paulo
-      MYSQL_ROOT_PASSWORD: 123@Mudar
-      MYSQL_DATABASE: enquetes
-      MYSQL_USER: enquetes
-      MYSQL_PASSWORD: xxxxxxxx
+      - TZ=America/Sao_Paulo
+      - MYSQL_ROOT_PASSWORD=123@Mudar
+      - MYSQL_DATABASE=enquetes
+      - MYSQL_USER=enquetes
+      - MYSQL_PASSWORD=xxxxxxxx
     volumes:
-      - /srv/dbserver:/var/lib/mysql
+      - /srv/enquetes/db:/var/lib/mysql

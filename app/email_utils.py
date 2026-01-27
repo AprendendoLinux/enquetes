@@ -6,13 +6,11 @@ import traceback
 from email.message import EmailMessage
 
 # --- CONFIGURAÇÃO DE LOGS ---
-# Isso garante que os logs apareçam no 'docker logs'
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("email_utils")
 
 # Configurações de SMTP
 SMTP_HOST = os.getenv("SMTP_HOST")
-# Converte para inteiro, padrão 587 se não definido
 SMTP_PORT = int(os.getenv("SMTP_PORT", 587)) 
 SMTP_USER = os.getenv("SMTP_USER")
 SMTP_PASSWORD = os.getenv("SMTP_PASSWORD")
@@ -126,24 +124,24 @@ def _send_email(msg, to_email):
         # 1. CONEXÃO
         logger.info("[1/6] Conectando ao servidor SMTP...")
         server = smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=20)
-        server.set_debuglevel(1) # Ativa o debug nativo do SMTP (mostra conversa com o servidor)
+        # server.set_debuglevel(1) # Comentado para limpar logs, descomente se precisar debugar protocolo
         
         # 2. EHLO INICIAL
         logger.info("[2/6] Enviando EHLO...")
         server.ehlo()
 
         # 3. STARTTLS (CRIPTOGRAFIA)
-        # Lógica: Se for porta 587 OU se o servidor anunciar suporte a STARTTLS, ativa.
+        # Verifica se é porta 587 ou se o servidor oferece STARTTLS
         if SMTP_PORT == 587 or server.has_extn("STARTTLS"):
             logger.info("[3/6] Iniciando STARTTLS...")
-            context = ssl.create_default_context()
             
-            # --- NOTA DE DEBUG: Se tiver erro de certificado (SSL), descomente as linhas abaixo ---
-            # context.check_hostname = False
-            # context.verify_mode = ssl.CERT_NONE
+            # Contexto SSL que ignora erros de certificado (autoassinado)
+            context = ssl.create_default_context()
+            context.check_hostname = False
+            context.verify_mode = ssl.CERT_NONE
             
             server.starttls(context=context)
-            logger.info("[3/6] STARTTLS concluído. Reenviando EHLO...")
+            logger.info("[3/6] STARTTLS concluído (Certificado Ignorado). Reenviando EHLO...")
             server.ehlo()
         else:
             logger.info("[3/6] Pulo do STARTTLS (Porta não é 587 e servidor não pediu).")

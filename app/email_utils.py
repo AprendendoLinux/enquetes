@@ -4,7 +4,8 @@ from email.message import EmailMessage
 
 # Configurações de SMTP
 SMTP_HOST = os.getenv("SMTP_HOST")
-SMTP_PORT = int(os.getenv("SMTP_PORT", 587))
+# Garante que seja inteiro, fallback para 25 se não definido
+SMTP_PORT = int(os.getenv("SMTP_PORT", 25)) 
 SMTP_USER = os.getenv("SMTP_USER")
 SMTP_PASSWORD = os.getenv("SMTP_PASSWORD")
 SMTP_FROM = os.getenv("SMTP_FROM")
@@ -60,21 +61,18 @@ def _get_html_template(base_url: str, title: str, body_content: str, action_url:
 
         /* Estilos do Cartão Principal */
         .main {{ background: #ffffff; border-radius: 12px; width: 100%; overflow: hidden; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }}
-        .wrapper {{ box-sizing: border-box; padding: 40px 30px; text-align: center; }} /* padding aumentado e text-align center */
+        .wrapper {{ box-sizing: border-box; padding: 40px 30px; text-align: center; }} 
         
         .footer {{ clear: both; margin-top: 10px; text-align: center; width: 100%; }}
         .footer td, .footer p, .footer span, .footer a {{ color: #999999; font-size: 12px; text-align: center; }}
 
-        /* Tipografia Centralizada */
         h1, h2, h3 {{ color: #000000; font-family: sans-serif; font-weight: 700; line-height: 1.4; margin: 0; margin-bottom: 20px; text-align: center; }}
         h1 {{ font-size: 24px; margin-bottom: 25px; }}
         p, ul, ol {{ font-family: sans-serif; font-size: 16px; font-weight: normal; margin: 0; margin-bottom: 20px; color: #555555; text-align: center; }}
         
-        /* Header Personalizado */
         .header-brand {{ background-color: #212529; padding: 30px 0; text-align: center; }}
         .header-title {{ color: white; font-size: 18px; margin-top: 10px; letter-spacing: 1px; text-transform: uppercase; font-weight: 700; text-align: center; }}
 
-        /* Responsividade Mobile */
         @media only screen and (max-width: 620px) {{
             table[class=body] h1 {{ font-size: 26px !important; margin-bottom: 15px !important; }}
             table[class=body] p, table[class=body] ul, table[class=body] ol, table[class=body] td, table[class=body] span, table[class=body] a {{ font-size: 16px !important; }}
@@ -83,7 +81,7 @@ def _get_html_template(base_url: str, title: str, body_content: str, action_url:
             table[class=body] .container {{ padding: 0 !important; width: 100% !important; }}
             table[class=body] .main {{ border-radius: 0 !important; }}
             table[class=body] .btn table {{ width: 100% !important; }}
-            table[class=body] .btn a {{ width: 100% !important; display: block !important; }} /* Botão full width no mobile */
+            table[class=body] .btn a {{ width: 100% !important; display: block !important; }}
         }}
         </style>
     </head>
@@ -93,16 +91,13 @@ def _get_html_template(base_url: str, title: str, body_content: str, action_url:
             <td>&nbsp;</td>
             <td class="container">
             <div class="content">
-
                 <table role="presentation" class="main">
-                    
                     <tr>
                         <td class="header-brand">
                             <img src="{logo_url}" alt="Logo" width="100" style="width: 100px; height: auto; display: block; margin: 0 auto; filter: brightness(0) invert(1);" />
                             <div class="header-title">Sistema de Enquetes</div>
                         </td>
                     </tr>
-
                     <tr>
                         <td class="wrapper">
                         <table role="presentation" border="0" cellpadding="0" cellspacing="0">
@@ -120,7 +115,6 @@ def _get_html_template(base_url: str, title: str, body_content: str, action_url:
                         </td>
                     </tr>
                 </table>
-
                 <div class="footer">
                 <table role="presentation" border="0" cellpadding="0" cellspacing="0">
                     <tr>
@@ -138,7 +132,6 @@ def _get_html_template(base_url: str, title: str, body_content: str, action_url:
                     </tr>
                 </table>
                 </div>
-
             </div>
             </td>
             <td>&nbsp;</td>
@@ -199,8 +192,17 @@ def send_reset_password_email(to_email: str, token: str, base_url: str):
 def _send_email(msg, to_email):
     try:
         with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as server:
-            server.starttls()
-            server.login(SMTP_USER, SMTP_PASSWORD)
+            # LÓGICA DE SEGURANÇA HÍBRIDA
+            
+            # Se for porta 587, assume que precisa de TLS
+            if SMTP_PORT == 587:
+                server.starttls()
+
+            # Só tenta autenticar (login) se as variáveis de ambiente existirem
+            # Se você comentou no docker-compose, elas serão None, e o login será pulado
+            if SMTP_USER and SMTP_PASSWORD:
+                server.login(SMTP_USER, SMTP_PASSWORD)
+
             server.send_message(msg)
             print(f"E-mail enviado para {to_email}")
     except Exception as e:

@@ -28,21 +28,18 @@ logger = logging.getLogger(__name__)
 UPLOAD_DIR = "static/uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
-# --- CRIAÇÃO DO ADMIN PADRÃO (Função auxiliar) ---
 def create_default_admin():
     try:
-        # Cria uma nova sessão apenas para essa operação
-        db = next(get_db())
-        admin_email = "admin@admin"
-        user = crud.get_user_by_email(db, admin_email)
+        db = next(get_db())    
+        any_user = db.query(models.User).first()
         
-        if not user:
-            logger.info("--- CRIANDO USUÁRIO ADMINISTRADOR PADRÃO ---")
+        if not any_user:
+            logger.info("--- TABELA VAZIA DETECTADA: CRIANDO ADMIN PADRÃO ---")
             hashed = get_password_hash("admin")
             admin_user = models.User(
                 first_name="Super",
                 last_name="Admin",
-                email=admin_email,
+                email="admin@admin",
                 hashed_password=hashed,
                 is_verified=True, 
                 is_admin=True,    
@@ -50,11 +47,13 @@ def create_default_admin():
             )
             db.add(admin_user)
             db.commit()
-            logger.info(f"Admin criado: {admin_email} / senha: admin")
+            logger.info("✅ Admin criado: admin@admin / senha: admin")
+        else:
+            logger.info("ℹ️ Tabela de usuários já contém dados. Criação do admin padrão ignorada.")
+            
     except Exception as e:
-        logger.error(f"Erro ao criar admin padrão: {e}")
+        logger.error(f"Erro ao verificar/criar admin padrão: {e}")
 
-# --- LIFESPAN: PRELOAD DO BANCO DE DADOS ---
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """
@@ -66,28 +65,24 @@ async def lifespan(app: FastAPI):
     db_ready = False
     while not db_ready:
         try:
-            # Tenta uma conexão simples
             with engine.connect() as connection:
                 connection.execute(text("SELECT 1"))
             db_ready = True
             logger.info("✅ Banco de dados conectado com sucesso!")
         except Exception as e:
-            logger.warning("⚠️ Banco ainda não disponível. Tentando novamente em 2 segundos...")
+            logger.warning(f"⚠️ Banco ainda não disponível. Erro: {e}")
+            logger.warning("Tentando novamente em 2 segundos...")
             time.sleep(2)
     
-    # Agora que o banco respondeu, criamos as tabelas
     logger.info("🛠️ Verificando/Criando tabelas...")
     Base.metadata.create_all(bind=engine)
     
-    # Verifica/Cria o admin
     create_default_admin()
     
-    yield # A aplicação roda aqui
+    yield
     
     logger.info("🛑 Aplicação encerrando...")
 
-# --- INICIALIZAÇÃO DO APP ---
-# Passamos o lifespan para o FastAPI gerenciar o start
 app = FastAPI(lifespan=lifespan)
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/token")
@@ -95,7 +90,6 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/token")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
-# Roteadores
 app.include_router(auth.router, prefix="/auth", tags=["auth"])
 app.include_router(poll.router, prefix="/polls", tags=["polls"])
 app.include_router(admin.router, prefix="/admin", tags=["admin"]) 
@@ -141,7 +135,7 @@ async def create_poll_page(request: Request, access_token: str | None = Cookie(d
 async def create_poll_action(
     request: Request,
     title: str = Form(...),
-    description: str = Form(None), # <--- NOVO (Atualizado conforme sua solicitação anterior)
+    description: str = Form(None),
     multiple_choice: bool = Form(False),
     check_ip: bool = Form(False),
     options: list[str] = Form(...),

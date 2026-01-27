@@ -11,12 +11,22 @@
     body { background: #f4f7f9; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
     .card-results { border: none; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); overflow: hidden; }
     
-    /* ALTERAÇÃO 1: Fundo do cabeçalho alterado para o gradiente preto (igual à página de votação) */
     .bg-header { background: linear-gradient(135deg, #212529, #000000); color: white; padding: 2rem; }
     
     .progress { height: 10px; border-radius: 5px; background-color: #e9ecef; }
     .badge-votes { font-size: 0.9rem; padding: 0.5em 0.8em; }
-    .chart-container { position: relative; height: 300px; width: 100%; display: flex; justify-content: center; }
+    
+    /* Gráfico com altura flexível, mas com mínimo garantido */
+    .chart-container { position: relative; min-height: 300px; width: 100%; display: flex; justify-content: center; }
+
+    /* Nova classe para a bolinha da legenda */
+    .legend-indicator {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      display: inline-block;
+      margin-right: 8px;
+    }
   </style>
 </head>
 <body class="py-5">
@@ -37,14 +47,18 @@
             {% for item in results %}
               <div class="mb-4">
                 <div class="d-flex justify-content-between align-items-center mb-1">
-                  <span class="fw-bold text-dark">{{ item.text }}</span>
+                  <div class="d-flex align-items-center">
+                    <span class="legend-indicator" data-color-index="{{ loop.index0 }}"></span>
+                    <span class="fw-bold text-dark">{{ item.text }}</span>
+                  </div>
                   <div>
                     <span class="fw-bold me-2">{{ item.percent }}%</span>
                     <span class="badge bg-light text-secondary border badge-votes">{{ item.votes }} votos</span>
                   </div>
                 </div>
                 <div class="progress">
-                  <div class="progress-bar bg-dark" role="progressbar" 
+                  <div class="progress-bar" role="progressbar" 
+                       data-color-index="{{ loop.index0 }}"
                        style="width: {{ item.percent }}%" 
                        aria-valuenow="{{ item.percent }}" aria-valuemin="0" aria-valuemax="100">
                   </div>
@@ -67,22 +81,34 @@
         </div>
 
         <div class="mt-5 d-grid gap-3 d-md-block text-center">
-          
           <a href="/polls/{{ poll.public_link }}" class="btn btn-outline-dark btn-lg px-4 rounded-pill">
             <i class="bi bi-arrow-left me-2"></i>Voltar para Enquete
           </a>
-
           <button onclick="window.location.reload();" class="btn btn-dark btn-lg px-4 rounded-pill ms-md-2">
             <i class="bi bi-arrow-clockwise me-2"></i>Atualizar
           </button>
-          
         </div>
       </div>
     </div>
   </div>
 
   <script>
-    // Dados injetados pelo Jinja2
+    // Paleta de cores centralizada
+    const chartColors = [
+      '#212529', '#6610f2', '#6f42c1', '#d63384', '#dc3545', 
+      '#fd7e14', '#ffc107', '#198754', '#20c997', '#0dcaf0'
+    ];
+
+    // 1. Aplica as cores na LISTA HTML (Bolinhas e Barras de Progresso)
+    // Isso garante que a lista combine perfeitamente com o gráfico
+    document.querySelectorAll('[data-color-index]').forEach(element => {
+      const index = parseInt(element.getAttribute('data-color-index'));
+      // Usa o operador % para repetir cores se houver mais candidatos que cores
+      const color = chartColors[index % chartColors.length];
+      element.style.backgroundColor = color;
+    });
+
+    // Dados do Jinja2
     const labels = [{% for item in results %}"{{ item.text }}",{% endfor %}];
     const dataPoints = [{% for item in results %}{{ item.votes }},{% endfor %}];
     
@@ -95,11 +121,7 @@
           labels: labels,
           datasets: [{
             data: dataPoints,
-            backgroundColor: [
-              // ALTERAÇÃO 5: Primeira cor da paleta alterada para preto (#212529) para combinar com o tema
-              '#212529', '#6610f2', '#6f42c1', '#d63384', '#dc3545', 
-              '#fd7e14', '#ffc107', '#198754', '#20c997', '#0dcaf0'
-            ],
+            backgroundColor: chartColors, // Usa a mesma paleta
             borderWidth: 2,
             borderColor: '#ffffff'
           }]
@@ -108,12 +130,12 @@
           responsive: true,
           maintainAspectRatio: false,
           plugins: {
+            // AQUI ESTÁ O TRUQUE: Desativamos a legenda interna do canvas
             legend: {
-              position: 'bottom',
-              labels: {
-                usePointStyle: true,
-                padding: 20
-              }
+              display: false 
+            },
+            tooltip: {
+              enabled: true // Mantemos o tooltip ao passar o mouse
             }
           }
         }

@@ -86,30 +86,26 @@ app.include_router(auth.router, prefix="/auth", tags=["auth"])
 app.include_router(poll.router, prefix="/polls", tags=["polls"])
 app.include_router(admin.router, prefix="/admin", tags=["admin"]) 
 
-# --- ROTA RAIZ (ALTERADA) ---
+# --- ROTA RAIZ ---
 @app.get("/", response_class=HTMLResponse)
 async def root(request: Request, db: Session = Depends(get_db), access_token: str | None = Cookie(default=None)):
-    # Lógica alterada: Não redireciona mais. Apenas identifica o usuário.
     user = None
     if access_token:
         email = verify_token(access_token)
         if email:
             user = crud.get_user_by_email(db, email)
     
-    # Busca as enquetes públicas (para todos verem)
     recent_polls = crud.get_recent_public_polls(db)
     
     for p in recent_polls:
          p.vote_count = db.query(models.Vote).filter(models.Vote.poll_id == p.id).count()
 
-    # Passamos o objeto 'user' (pode ser None ou um Usuário logado) para o template
     return templates.TemplateResponse("login.html", {
         "request": request, 
         "polls": recent_polls, 
         "user": user 
     })
 
-# Redireciona /login para a raiz
 @app.get("/login", response_class=HTMLResponse)
 async def login_page_redirect():
     return RedirectResponse("/", status_code=303)
@@ -118,6 +114,7 @@ async def login_page_redirect():
 async def register_page(request: Request):
     return templates.TemplateResponse("register.html", {"request": request})
 
+# --- DASHBOARD COM RESULTADOS PRÉ-CALCULADOS ---
 @app.get("/dashboard", response_class=HTMLResponse)
 async def dashboard(request: Request, db: Session = Depends(get_db), access_token: str | None = Cookie(default=None)):
     email = verify_token(access_token)
@@ -131,7 +128,28 @@ async def dashboard(request: Request, db: Session = Depends(get_db), access_toke
     polls = db.query(models.Poll).filter(models.Poll.creator_id == user.id).all()
     
     for p in polls:
-        p.vote_count = db.query(models.Vote).filter(models.Vote.poll_id == p.id).count()
+        # Busca todos os votos dessa enquete
+        votes = db.query(models.Vote).filter(models.Vote.poll_id == p.id).all()
+        p.vote_count = len(votes)
+        
+        # Busca opções e calcula porcentagens para o modal de resumo
+        options = db.query(models.Option).filter(models.Option.poll_id == p.id).all()
+        p.results_summary = []
+        
+        for opt in options:
+            opt_votes = sum(1 for v in votes if v.option_id == opt.id)
+            percent = 0
+            if p.vote_count > 0:
+                percent = round((opt_votes / p.vote_count) * 100, 1)
+            
+            p.results_summary.append({
+                "text": opt.text,
+                "votes": opt_votes,
+                "percent": percent
+            })
+        
+        # Ordena as opções por número de votos (maior para menor) para ficar bonito no gráfico
+        p.results_summary.sort(key=lambda x: x['votes'], reverse=True)
 
     return templates.TemplateResponse("dashboard.html", {"request": request, "user": user, "polls": polls})
 
@@ -148,7 +166,7 @@ async def create_poll_action(
     description: str = Form(None),
     multiple_choice: bool = Form(False),
     check_ip: bool = Form(False),
-    is_public: bool = Form(False), 
+    is_public: bool = Form(False),
     options: list[str] = Form(...),
     deadline: str | None = Form(None),
     image_file: UploadFile = File(None),

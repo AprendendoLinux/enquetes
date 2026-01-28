@@ -9,7 +9,7 @@
   <style>
       .dropdown-menu-dark { background-color: #343a40; border-color: #495057; }
       .dropdown-item:hover { background-color: #495057; }
-      /* Estilo para o botão de copiar ficar alinhado e bonito */
+      
       .btn-copy {
           width: 30px; 
           height: 30px; 
@@ -22,6 +22,11 @@
       .btn-copy:hover {
           background-color: #e9ecef;
           color: #0d6efd !important;
+      }
+
+      /* Cores para o modal de resultados */
+      .progress-bar-custom {
+          background-color: #212529;
       }
   </style>
 </head>
@@ -130,9 +135,9 @@
                         
                         <td class="text-end pe-4">
                           <div class="btn-group">
-                              <a href="/polls/{{ poll.public_link }}/results" class="btn btn-outline-dark btn-sm" title="Ver Resultados">
+                              <button type="button" class="btn btn-outline-dark btn-sm" data-bs-toggle="modal" data-bs-target="#resultsModal{{ poll.id }}" title="Ver Resultados Rápidos">
                                 <i class="bi bi-bar-chart-fill"></i>
-                              </a>
+                              </button>
                               
                               <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#dateModal{{ poll.id }}" title="Alterar Prazo">
                                 <i class="bi bi-calendar3"></i>
@@ -159,6 +164,45 @@
                               </button>
                           </div>
 
+                          <div class="modal fade" id="resultsModal{{ poll.id }}" tabindex="-1" aria-hidden="true">
+                            <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+                                <div class="modal-content rounded-4 shadow">
+                                    <div class="modal-header border-0 pb-0">
+                                        <h5 class="modal-title fw-bold">Resultados Parciais</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <h6 class="text-muted mb-4">{{ poll.title }}</h6>
+                                        
+                                        {% if poll.vote_count == 0 %}
+                                            <div class="text-center py-4 text-muted">
+                                                <i class="bi bi-bar-chart fs-1 opacity-25"></i>
+                                                <p class="mt-2">Nenhum voto registrado ainda.</p>
+                                            </div>
+                                        {% else %}
+                                            {% for item in poll.results_summary %}
+                                            <div class="mb-3">
+                                                <div class="d-flex justify-content-between align-items-center mb-1 small">
+                                                    <span class="fw-bold text-dark text-truncate" style="max-width: 70%;">{{ item.text }}</span>
+                                                    <span>{{ item.percent }}% ({{ item.votes }})</span>
+                                                </div>
+                                                <div class="progress" style="height: 8px;">
+                                                    <div class="progress-bar progress-bar-custom" role="progressbar" 
+                                                         style="width: {{ item.percent }}%; opacity: 0.8;">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            {% endfor %}
+                                            <div class="text-center mt-4 pt-3 border-top">
+                                                <a href="/polls/{{ poll.public_link }}/results" target="_blank" class="btn btn-sm btn-outline-dark rounded-pill px-4">
+                                                    Ver Relatório Completo <i class="bi bi-box-arrow-up-right ms-1"></i>
+                                                </a>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                          </div>
                           <div class="modal fade" id="dateModal{{ poll.id }}" tabindex="-1" aria-hidden="true">
                             <div class="modal-dialog modal-dialog-centered">
                                 <form class="modal-content rounded-4 shadow" action="/polls/{{ poll.id }}/update_deadline" method="post">
@@ -228,20 +272,12 @@
   <script>
       function copyLink(btnElement, textToCopy) {
           navigator.clipboard.writeText(textToCopy).then(() => {
-              // Feedback Visual: Troca o ícone para um Check
               const icon = btnElement.querySelector('i');
-              
-              // Salva a classe original
               const originalClass = icon.className;
-              
-              // Muda para check verde
               icon.className = 'bi bi-check-lg text-success';
-              
-              // Restaura após 2 segundos
               setTimeout(() => {
                   icon.className = 'bi bi-clipboard';
               }, 2000);
-              
           }).catch(err => {
               console.error('Falha ao copiar: ', err);
               alert('Não foi possível copiar o link automaticamente.');

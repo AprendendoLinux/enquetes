@@ -131,7 +131,19 @@ def delete_user(user_id: int, request: Request, db: Session = Depends(get_db)):
         db.commit()
     return RedirectResponse("/admin?tab=users", status_code=303)
 
-# --- GERENCIAMENTO DE ENQUETES (Mantido Igual) ---
+# --- GERENCIAMENTO DE ENQUETES ---
+
+# NOVA ROTA: ALTERAR VISIBILIDADE (ADMIN)
+@router.post("/polls/{poll_id}/toggle_visibility")
+def toggle_visibility_poll(poll_id: int, request: Request, db: Session = Depends(get_db)):
+    admin = get_current_admin(request, db)
+    if not admin: return RedirectResponse("/login", status_code=303)
+    poll = db.query(models.Poll).filter(models.Poll.id == poll_id).first()
+    if poll:
+        poll.is_public = not poll.is_public
+        db.commit()
+    return RedirectResponse("/admin?tab=polls", status_code=303)
+
 @router.post("/polls/{poll_id}/toggle_archive")
 def toggle_archive_poll(poll_id: int, request: Request, db: Session = Depends(get_db)):
     admin = get_current_admin(request, db)

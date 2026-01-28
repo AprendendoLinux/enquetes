@@ -220,16 +220,28 @@
                                     <td>
                                         {% if p.archived %}
                                             <span class="badge bg-secondary rounded-pill">Arquivada</span>
+                                        {% elif not p.is_public %}
+                                            <span class="badge bg-dark rounded-pill"><i class="bi bi-lock-fill me-1"></i>Privada</span>
                                         {% else %}
-                                            <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill">Ativa</span>
+                                            <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill">Pública</span>
                                         {% endif %}
                                     </td>
                                     <td class="text-end pe-4 col-actions">
                                         <div class="btn-group">
-                                            <button class="btn btn-sm btn-outline-secondary rounded-start-pill" data-bs-toggle="modal" data-bs-target="#dateModal{{ p.id }}">
+                                            <button class="btn btn-sm btn-outline-secondary rounded-start-pill" data-bs-toggle="modal" data-bs-target="#dateModal{{ p.id }}" title="Alterar Prazo">
                                                 <i class="bi bi-calendar"></i>
                                             </button>
                                             
+                                            <form action="/admin/polls/{{ p.id }}/toggle_visibility" method="post" class="d-inline">
+                                                <button class="btn btn-sm btn-outline-secondary border-start-0" title="{% if p.is_public %}Tornar Privada{% else %}Tornar Pública{% endif %}">
+                                                    {% if p.is_public %}
+                                                        <i class="bi bi-globe"></i>
+                                                    {% else %}
+                                                        <i class="bi bi-lock-fill"></i>
+                                                    {% endif %}
+                                                </button>
+                                            </form>
+
                                             <form action="/admin/polls/{{ p.id }}/toggle_archive" method="post" class="d-inline">
                                                 <button class="btn btn-sm btn-outline-secondary border-start-0 border-end-0" title="Arquivar/Desarquivar">
                                                     <i class="bi bi-archive-fill"></i>

@@ -86,24 +86,30 @@ app.include_router(auth.router, prefix="/auth", tags=["auth"])
 app.include_router(poll.router, prefix="/polls", tags=["polls"])
 app.include_router(admin.router, prefix="/admin", tags=["admin"]) 
 
-# --- ROTA RAIZ (HOME COM ENQUETES) ---
+# --- ROTA RAIZ (ALTERADA) ---
 @app.get("/", response_class=HTMLResponse)
 async def root(request: Request, db: Session = Depends(get_db), access_token: str | None = Cookie(default=None)):
-    # Se o usuário já estiver logado, redireciona para o painel pessoal
-    if access_token and verify_token(access_token):
-        return RedirectResponse("/dashboard", status_code=303)
+    # Lógica alterada: Não redireciona mais. Apenas identifica o usuário.
+    user = None
+    if access_token:
+        email = verify_token(access_token)
+        if email:
+            user = crud.get_user_by_email(db, email)
     
-    # Se não estiver logado, busca as enquetes públicas para mostrar na Home
+    # Busca as enquetes públicas (para todos verem)
     recent_polls = crud.get_recent_public_polls(db)
     
-    # Adiciona a contagem de votos para exibir nos cards
     for p in recent_polls:
          p.vote_count = db.query(models.Vote).filter(models.Vote.poll_id == p.id).count()
 
-    # Renderiza a página de login que agora é também a Home
-    return templates.TemplateResponse("login.html", {"request": request, "polls": recent_polls})
+    # Passamos o objeto 'user' (pode ser None ou um Usuário logado) para o template
+    return templates.TemplateResponse("login.html", {
+        "request": request, 
+        "polls": recent_polls, 
+        "user": user 
+    })
 
-# Redireciona /login para a raiz (evita duplicidade)
+# Redireciona /login para a raiz
 @app.get("/login", response_class=HTMLResponse)
 async def login_page_redirect():
     return RedirectResponse("/", status_code=303)
@@ -142,7 +148,7 @@ async def create_poll_action(
     description: str = Form(None),
     multiple_choice: bool = Form(False),
     check_ip: bool = Form(False),
-    is_public: bool = Form(False), # <--- NOVO PARÂMETRO
+    is_public: bool = Form(False), 
     options: list[str] = Form(...),
     deadline: str | None = Form(None),
     image_file: UploadFile = File(None),
@@ -183,7 +189,7 @@ async def create_poll_action(
         description=description,
         multiple_choice=multiple_choice,
         check_ip=check_ip,
-        is_public=is_public, # <--- Passando para o schema
+        is_public=is_public,
         options=cleaned_options,
         deadline=deadline_dt,
         image_path=image_path_db

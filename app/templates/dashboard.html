@@ -9,6 +9,20 @@
   <style>
       .dropdown-menu-dark { background-color: #343a40; border-color: #495057; }
       .dropdown-item:hover { background-color: #495057; }
+      /* Estilo para o botão de copiar ficar alinhado e bonito */
+      .btn-copy {
+          width: 30px; 
+          height: 30px; 
+          display: flex; 
+          align-items: center; 
+          justify-content: center;
+          border-radius: 8px;
+          transition: all 0.2s;
+      }
+      .btn-copy:hover {
+          background-color: #e9ecef;
+          color: #0d6efd !important;
+      }
   </style>
 </head>
 <body class="bg-light">
@@ -24,7 +38,6 @@
 
       <div class="collapse navbar-collapse" id="navbarContent">
         <ul class="navbar-nav me-auto">
-          
           <li class="nav-item">
             <a class="btn btn-outline-light btn-sm rounded-pill px-3 mt-3 mt-lg-0 fw-bold" href="/">
                 <i class="bi bi-house-door-fill me-1"></i> Início
@@ -86,10 +99,19 @@
                     {% for poll in polls %}
                       <tr>
                         <td class="ps-4 fw-semibold text-dark">{{ poll.title }}</td>
+                        
                         <td>
-                            <a href="/polls/{{ poll.public_link }}" target="_blank" class="text-decoration-none font-monospace text-primary bg-primary bg-opacity-10 px-2 py-1 rounded">
-                                <i class="bi bi-link-45deg"></i> /{{ poll.public_link }}
-                            </a>
+                            <div class="d-flex align-items-center">
+                                <a href="/polls/{{ poll.public_link }}" target="_blank" class="text-decoration-none font-monospace text-primary bg-primary bg-opacity-10 px-2 py-1 rounded">
+                                    <i class="bi bi-link-45deg"></i> /{{ poll.public_link }}
+                                </a>
+                                
+                                <button class="btn btn-light border btn-copy ms-2 text-muted" 
+                                        onclick="copyLink(this, '{{ request.base_url }}polls/{{ poll.public_link }}')" 
+                                        title="Copiar Link para Área de Transferência">
+                                    <i class="bi bi-clipboard"></i>
+                                </button>
+                            </div>
                         </td>
                         
                         <td>
@@ -202,5 +224,29 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  
+  <script>
+      function copyLink(btnElement, textToCopy) {
+          navigator.clipboard.writeText(textToCopy).then(() => {
+              // Feedback Visual: Troca o ícone para um Check
+              const icon = btnElement.querySelector('i');
+              
+              // Salva a classe original
+              const originalClass = icon.className;
+              
+              // Muda para check verde
+              icon.className = 'bi bi-check-lg text-success';
+              
+              // Restaura após 2 segundos
+              setTimeout(() => {
+                  icon.className = 'bi bi-clipboard';
+              }, 2000);
+              
+          }).catch(err => {
+              console.error('Falha ao copiar: ', err);
+              alert('Não foi possível copiar o link automaticamente.');
+          });
+      }
+  </script>
 </body>
 </html>

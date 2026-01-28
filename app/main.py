@@ -114,7 +114,7 @@ async def login_page_redirect():
 async def register_page(request: Request):
     return templates.TemplateResponse("register.html", {"request": request})
 
-# --- DASHBOARD COM RESULTADOS PRÉ-CALCULADOS ---
+# --- DASHBOARD ---
 @app.get("/dashboard", response_class=HTMLResponse)
 async def dashboard(request: Request, db: Session = Depends(get_db), access_token: str | None = Cookie(default=None)):
     email = verify_token(access_token)
@@ -148,16 +148,29 @@ async def dashboard(request: Request, db: Session = Depends(get_db), access_toke
                 "percent": percent
             })
         
-        # Ordena as opções por número de votos (maior para menor) para ficar bonito no gráfico
+        # Ordena as opções por número de votos (maior para menor) para o gráfico
         p.results_summary.sort(key=lambda x: x['votes'], reverse=True)
 
     return templates.TemplateResponse("dashboard.html", {"request": request, "user": user, "polls": polls})
 
+# --- CRIAR ENQUETE (ATUALIZADO PARA PASSAR USER) ---
 @app.get("/create_poll", response_class=HTMLResponse)
-async def create_poll_page(request: Request, access_token: str | None = Cookie(default=None)):
-    if not access_token or not verify_token(access_token):
+async def create_poll_page(request: Request, db: Session = Depends(get_db), access_token: str | None = Cookie(default=None)):
+    # 1. Verifica autenticação
+    if not access_token:
         return RedirectResponse("/login", status_code=303)
-    return templates.TemplateResponse("create_poll.html", {"request": request})
+    
+    email = verify_token(access_token)
+    if not email:
+        return RedirectResponse("/login", status_code=303)
+    
+    # 2. Busca usuário (Necessário para a Navbar funcionar)
+    user = crud.get_user_by_email(db, email)
+    if not user:
+        return RedirectResponse("/login", status_code=303)
+
+    # 3. Retorna template com o user
+    return templates.TemplateResponse("create_poll.html", {"request": request, "user": user})
 
 @app.post("/create_poll")
 async def create_poll_action(
@@ -183,6 +196,7 @@ async def create_poll_action(
     if len(cleaned_options) < 2:
         return templates.TemplateResponse("create_poll.html", {
             "request": request, 
+            "user": user, # Passa o user de volta para não quebrar o layout
             "error": "A enquete precisa de pelo menos duas opções válidas."
         })
 

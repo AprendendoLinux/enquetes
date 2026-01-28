@@ -8,7 +8,6 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
 
   <style>
     body { background: #f4f7f9; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
@@ -19,10 +18,8 @@
     .progress { height: 10px; border-radius: 5px; background-color: #e9ecef; }
     .badge-votes { font-size: 0.9rem; padding: 0.5em 0.8em; }
     
-    /* Gráfico com altura flexível */
     .chart-container { position: relative; min-height: 300px; width: 100%; display: flex; justify-content: center; }
 
-    /* Nova classe para a bolinha da legenda lateral */
     .legend-indicator {
       width: 12px;
       height: 12px;
@@ -101,15 +98,20 @@
   </div>
 
   <script>
-    // Registra o plugin de DataLabels
-    Chart.register(ChartDataLabels);
-
+    // Paleta sem Vermelho (Tons de Azul, Verde, Amarelo, Roxo, Cinza)
     const chartColors = [
-      '#212529', '#6610f2', '#6f42c1', '#d63384', '#dc3545', 
-      '#fd7e14', '#ffc107', '#198754', '#20c997', '#0dcaf0'
+      '#0d6efd', // Azul Primary
+      '#198754', // Verde Success
+      '#ffc107', // Amarelo Warning
+      '#6610f2', // Roxo Indigo
+      '#0dcaf0', // Ciano Info
+      '#212529', // Preto/Cinza Escuro
+      '#fd7e14', // Laranja (Aceitável, longe do vermelho alerta)
+      '#6c757d', // Cinza Médio
+      '#20c997', // Teal
+      '#adb5bd'  // Cinza Claro
     ];
 
-    // Sincroniza cores na lista HTML
     document.querySelectorAll('[data-color-index]').forEach(element => {
       const index = parseInt(element.getAttribute('data-color-index'));
       const color = chartColors[index % chartColors.length];
@@ -129,7 +131,8 @@
             data: dataPoints,
             backgroundColor: chartColors,
             borderWidth: 2,
-            borderColor: '#ffffff'
+            borderColor: '#ffffff',
+            hoverOffset: 6
           }]
         },
         options: {
@@ -139,28 +142,24 @@
             legend: {
               display: false 
             },
+            // CONFIGURAÇÃO DO TOOLTIP (PERCENTUAL)
             tooltip: {
-              enabled: true
-            },
-            // CONFIGURAÇÃO DOS RÓTULOS (NOVO)
-            datalabels: {
-              color: '#ffffff', // Cor do texto (Branco)
-              font: {
-                weight: 'bold',
-                size: 14
-              },
-              formatter: (value, ctx) => {
-                // Lógica para calcular a porcentagem
-                let sum = 0;
-                let dataArr = ctx.chart.data.datasets[0].data;
-                dataArr.map(data => {
-                  sum += data;
-                });
-                let percentage = (value * 100 / sum).toFixed(1) + "%";
-                
-                // Se o valor for 0 ou muito pequeno, não exibe para não poluir
-                if (value === 0) return ""; 
-                return percentage;
+              enabled: true,
+              callbacks: {
+                label: function(context) {
+                    let label = context.label || '';
+                    if (label) {
+                        label += ': ';
+                    }
+                    
+                    let value = context.parsed;
+                    // Calcula o total de votos do dataset
+                    let total = context.chart._metasets[context.datasetIndex].total;
+                    // Calcula o percentual
+                    let percentage = ((value / total) * 100).toFixed(1) + "%";
+                    
+                    return label + value + ' votos (' + percentage + ')';
+                }
               }
             }
           }

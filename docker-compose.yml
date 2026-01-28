@@ -1,0 +1,49 @@
+networks:
+  app-network:
+    driver: bridge
+    name: app-network
+    enable_ipv6: true
+
+services:
+  app:
+    container_name: app
+    hostname: app
+    restart: always
+    networks:
+      - app-network
+    build: .
+    environment:
+      - TZ=America/Sao_Paulo
+      - DB_USER=enquetes
+      - DB_PASSWORD=xxxxxxxx
+      - DB_NAME=enquetes
+      - DB_HOST=db
+      - SECRET_KEY=UJ7vN4pR9xFla2qL8tW5hZ3cF6bY1gD0eA_kP!rT@mV+nQvjX
+      - SMTP_HOST=smtp.gmail.com
+      - SMTP_PORT=587
+      - SMTP_USER=seuemail@gmail.com
+      - SMTP_PASSWORD=xxxxxxxxxxxxxx
+      - SMTP_FROM=Sistema de Enquetes <seuemail@gmail.com>
+    depends_on:
+      - db
+    volumes:
+      - /srv/enquetes/app:/app/static/uploads
+    ports:
+      - 8000:8000
+
+  db:
+    container_name: db
+    hostname: db
+    image: mysql:latest
+    restart: always
+    networks:
+      - app-network
+    environment:
+      - TZ=America/Sao_Paulo
+      - MYSQL_ROOT_PASSWORD=123@Mudar
+      - MYSQL_DATABASE=enquetes
+      - MYSQL_USER=enquetes
+      - MYSQL_PASSWORD=xxxxxxxx
+    volumes:
+      - /srv/enquetes/db:/var/lib/mysql
+    ports:

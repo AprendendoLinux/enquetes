@@ -10,8 +10,8 @@ class User(Base):
     hashed_password = Column(String(255), nullable=False)
     
     is_verified = Column(Boolean, default=False)
-    is_admin = Column(Boolean, default=False)    # Define se é administrador
-    is_blocked = Column(Boolean, default=False)  # Define se foi banido
+    is_admin = Column(Boolean, default=False)
+    is_blocked = Column(Boolean, default=False)
     
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
@@ -19,9 +19,14 @@ class Poll(Base):
     __tablename__ = "polls"
     id = Column(Integer, primary_key=True, index=True)
     title = Column(String(255), nullable=False)
-    description = Column(Text, nullable=True)  # <--- NOVO CAMPO
+    description = Column(Text, nullable=True)
     multiple_choice = Column(Boolean, default=False)
-    check_ip = Column(Boolean, default=True) 
+    check_ip = Column(Boolean, default=True)
+    
+    # --- NOVO CAMPO ---
+    is_public = Column(Boolean, default=True) 
+    # ------------------
+    
     creator_id = Column(Integer, ForeignKey("users.id"))
     public_link = Column(String(36), unique=True, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())

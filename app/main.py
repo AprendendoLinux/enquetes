@@ -7,13 +7,13 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
-from sqlalchemy.sql import text # Necessário para o teste de conexão
+from sqlalchemy.sql import text 
 import shutil
 import os
 import uuid
 from datetime import datetime
 
-# Imports do seu sistema
+# Imports do sistema
 from auth_utils import verify_token, get_password_hash 
 from database import engine, Base, get_db
 
@@ -56,12 +56,7 @@ def create_default_admin():
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """
-    Função executada ANTES da aplicação começar a receber requisições.
-    Serve para aguardar o banco de dados estar pronto.
-    """
     logger.info("⏳ Aguardando banco de dados iniciar...")
-    
     db_ready = False
     while not db_ready:
         try:
@@ -76,11 +71,8 @@ async def lifespan(app: FastAPI):
     
     logger.info("🛠️ Verificando/Criando tabelas...")
     Base.metadata.create_all(bind=engine)
-    
     create_default_admin()
-    
     yield
-    
     logger.info("🛑 Aplicação encerrando...")
 
 app = FastAPI(lifespan=lifespan)
@@ -94,15 +86,27 @@ app.include_router(auth.router, prefix="/auth", tags=["auth"])
 app.include_router(poll.router, prefix="/polls", tags=["polls"])
 app.include_router(admin.router, prefix="/admin", tags=["admin"]) 
 
+# --- ROTA RAIZ (HOME COM ENQUETES) ---
 @app.get("/", response_class=HTMLResponse)
-async def root(request: Request, access_token: str | None = Cookie(default=None)):
+async def root(request: Request, db: Session = Depends(get_db), access_token: str | None = Cookie(default=None)):
+    # Se o usuário já estiver logado, redireciona para o painel pessoal
     if access_token and verify_token(access_token):
         return RedirectResponse("/dashboard", status_code=303)
-    return templates.TemplateResponse("login.html", {"request": request})
+    
+    # Se não estiver logado, busca as enquetes públicas para mostrar na Home
+    recent_polls = crud.get_recent_public_polls(db)
+    
+    # Adiciona a contagem de votos para exibir nos cards
+    for p in recent_polls:
+         p.vote_count = db.query(models.Vote).filter(models.Vote.poll_id == p.id).count()
 
+    # Renderiza a página de login que agora é também a Home
+    return templates.TemplateResponse("login.html", {"request": request, "polls": recent_polls})
+
+# Redireciona /login para a raiz (evita duplicidade)
 @app.get("/login", response_class=HTMLResponse)
-async def login_page(request: Request):
-    return templates.TemplateResponse("login.html", {"request": request})
+async def login_page_redirect():
+    return RedirectResponse("/", status_code=303)
 
 @app.get("/register", response_class=HTMLResponse)
 async def register_page(request: Request):
@@ -138,6 +142,7 @@ async def create_poll_action(
     description: str = Form(None),
     multiple_choice: bool = Form(False),
     check_ip: bool = Form(False),
+    is_public: bool = Form(False), # <--- NOVO PARÂMETRO
     options: list[str] = Form(...),
     deadline: str | None = Form(None),
     image_file: UploadFile = File(None),
@@ -175,9 +180,10 @@ async def create_poll_action(
 
     poll_create = schemas.PollCreate(
         title=title,
-        description=description, # <--- NOVO
+        description=description,
         multiple_choice=multiple_choice,
         check_ip=check_ip,
+        is_public=is_public, # <--- Passando para o schema
         options=cleaned_options,
         deadline=deadline_dt,
         image_path=image_path_db

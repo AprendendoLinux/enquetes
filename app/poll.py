@@ -185,7 +185,29 @@ def update_deadline(
     crud.update_poll_deadline(db, poll.id, deadline_dt)
     return RedirectResponse("/dashboard", status_code=303)
 
-# NOVA ROTA: ARQUIVAR
+# ROTA: ALTERAR VISIBILIDADE (NOVO)
+@router.post("/{poll_id}/toggle_visibility")
+def toggle_visibility_user(
+    poll_id: int, 
+    request: Request,
+    db: Session = Depends(get_db),
+    access_token: str | None = Cookie(default=None)
+):
+    email = verify_token(access_token)
+    if not email: return RedirectResponse("/login", status_code=303)
+    
+    user = crud.get_user_by_email(db, email)
+    poll = db.query(models.Poll).filter(models.Poll.id == poll_id).first()
+    
+    if not poll or poll.creator_id != user.id:
+        raise HTTPException(403, "Não autorizado")
+
+    # Inverte o status atual
+    poll.is_public = not poll.is_public
+    db.commit()
+    return RedirectResponse("/dashboard", status_code=303)
+
+# ROTA: ARQUIVAR
 @router.post("/{poll_id}/toggle_archive")
 def toggle_archive_user(
     poll_id: int, 

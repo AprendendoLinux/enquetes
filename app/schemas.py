@@ -2,7 +2,6 @@ from pydantic import BaseModel, ConfigDict
 from datetime import datetime
 from typing import Optional
 
-# --- SCHEMAS DE USUÁRIO (Essenciais para o login e registro) ---
 class UserCreate(BaseModel):
     first_name: str
     last_name: str
@@ -16,12 +15,16 @@ class UserOut(BaseModel):
     email: str
     model_config = ConfigDict(from_attributes=True)
 
-# --- SCHEMAS DE ENQUETE (Com o novo campo description) ---
 class PollCreate(BaseModel):
     title: str
-    description: Optional[str] = None  # Novo campo
+    description: Optional[str] = None
     multiple_choice: bool = False
     check_ip: bool = True
+    
+    # --- NOVO CAMPO ---
+    is_public: bool = True
+    # ------------------
+    
     options: list[str]
     deadline: Optional[datetime] = None
     image_path: Optional[str] = None
@@ -29,9 +32,10 @@ class PollCreate(BaseModel):
 class PollOut(BaseModel):
     id: int
     title: str
-    description: Optional[str]  # Novo campo
+    description: Optional[str]
     multiple_choice: bool
     check_ip: bool
+    is_public: bool # <--- NOVO
     public_link: str
     deadline: Optional[datetime]
     image_path: Optional[str]

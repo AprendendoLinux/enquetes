@@ -47,15 +47,30 @@
                 <h6 class="text-uppercase text-muted small fw-bold mb-3">Configurações da Enquete</h6>
                 
                 <div class="form-check form-switch mb-3">
-                  <input class="form-check-input" type="checkbox" id="multiple_choice" name="multiple_choice" value="true">
-                  <label class="form-check-label fw-semibold" for="multiple_choice">Permitir seleção de várias opções</label>
+                  <input class="form-check-input" type="checkbox" id="is_public" name="is_public" value="true" checked>
+                  <label class="form-check-label fw-semibold" for="is_public">
+                    Enquete Pública
+                    <div class="text-muted small fw-normal">Se marcado, aparecerá na página inicial. Se desmarcado, apenas quem tiver o link poderá acessar.</div>
+                  </label>
                 </div>
+                
+                <hr class="my-3 opacity-25">
+
+                <div class="form-check form-switch mb-3">
+                  <input class="form-check-input" type="checkbox" id="multiple_choice" name="multiple_choice" value="true">
+                  <label class="form-check-label fw-semibold" for="multiple_choice">
+                    Permitir Múltipla Escolha
+                    <div class="text-muted small fw-normal">O usuário poderá selecionar mais de uma opção.</div>
+                  </label>
+                </div>
+
+                <hr class="my-3 opacity-25">
 
                 <div class="form-check form-switch mb-3">
                   <input class="form-check-input" type="checkbox" id="check_ip" name="check_ip" value="true" checked>
                   <label class="form-check-label fw-semibold" for="check_ip">
                     Segurança Reforçada (IP + Cache)
-                    <div class="text-muted small fw-normal">Bloqueia múltiplos votos do mesmo Wi-Fi.</div>
+                    <div class="text-muted small fw-normal">Bloqueia múltiplos votos do mesmo dispositivo/rede.</div>
                   </label>
                 </div>
 
@@ -130,7 +145,7 @@
 
   <script>
     document.addEventListener('DOMContentLoaded', function() {
-      // --- Lógica das Opções Dinâmicas (Mantida) ---
+      // --- Lógica das Opções Dinâmicas ---
       const container = document.getElementById('options-container');
       const addButton = document.getElementById('btn-add-option');
       let optionCount = 2;
@@ -163,49 +178,28 @@
         input.focus();
       });
 
-      // --- NOVA LÓGICA: Controles Independentes ---
+      // --- Lógica dos Toggles ---
       
-      // 1. Controle da Descrição (NOVO)
-      const toggleDescription = document.getElementById('toggle-description');
-      const descriptionSection = document.getElementById('description-section');
-      const descriptionInput = document.getElementById('description');
+      const setupToggle = (toggleId, sectionId, inputId) => {
+          const toggle = document.getElementById(toggleId);
+          const section = document.getElementById(sectionId);
+          const input = document.getElementById(inputId);
 
-      toggleDescription.addEventListener('change', function() {
-        if (this.checked) {
-            descriptionSection.style.display = 'block';
-        } else {
-            descriptionSection.style.display = 'none';
-            descriptionInput.value = ''; // Limpa o valor ao desmarcar
-        }
-      });
+          if(toggle && section) {
+              toggle.addEventListener('change', function() {
+                if (this.checked) {
+                    section.style.display = 'block';
+                } else {
+                    section.style.display = 'none';
+                    if(input) input.value = ''; 
+                }
+              });
+          }
+      };
 
-      // 2. Controle do Prazo
-      const toggleDeadline = document.getElementById('toggle-deadline');
-      const deadlineSection = document.getElementById('deadline-section');
-      const deadlineInput = document.getElementById('deadline');
-
-      toggleDeadline.addEventListener('change', function() {
-        if (this.checked) {
-          deadlineSection.style.display = 'block';
-        } else {
-          deadlineSection.style.display = 'none';
-          deadlineInput.value = ''; // Limpa o valor ao desmarcar
-        }
-      });
-
-      // 3. Controle da Imagem
-      const toggleImage = document.getElementById('toggle-image');
-      const imageSection = document.getElementById('image-section');
-      const imageInput = document.getElementById('image_file');
-
-      toggleImage.addEventListener('change', function() {
-        if (this.checked) {
-          imageSection.style.display = 'block';
-        } else {
-          imageSection.style.display = 'none';
-          imageInput.value = ''; // Limpa o valor ao desmarcar
-        }
-      });
+      setupToggle('toggle-description', 'description-section', 'description');
+      setupToggle('toggle-deadline', 'deadline-section', 'deadline');
+      setupToggle('toggle-image', 'image-section', 'image_file');
     });
   </script>
 </body>

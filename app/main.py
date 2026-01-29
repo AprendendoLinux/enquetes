@@ -97,7 +97,7 @@ app.include_router(admin.router, prefix="/admin", tags=["admin"])
 def login_redirect():
     return RedirectResponse("/", status_code=303)
 
-# --- ROTA DA HOME PAGE ---
+# --- ROTA DA HOME PAGE (CORRIGIDA) ---
 @app.get("/", response_class=HTMLResponse)
 def read_root(
     request: Request, 
@@ -111,9 +111,10 @@ def read_root(
         email = verify_token(token)
         if email:
             user = crud.get_user_by_email(db, email)
-            # CORREÇÃO: Se estiver logado (mesmo admin), vai pro Dashboard pessoal
-            if user:
-                return RedirectResponse("/dashboard", status_code=303)
+            # --- AJUSTE AQUI ---
+            # Removi o RedirectResponse("/dashboard").
+            # Agora, se o usuário existe, ele simplesmente carrega a página (user=user).
+            # O base.html cuidará de mostrar o menu logado.
 
     recent_polls = crud.get_recent_public_polls(db, limit=12)
     
@@ -123,7 +124,7 @@ def read_root(
     return templates.TemplateResponse("login.html", {
         "request": request, 
         "polls": recent_polls,
-        "user": user,
+        "user": user, # Passa o usuário para a navbar
         "error": error,
         "success": success
     })
@@ -150,8 +151,7 @@ def dashboard(
     user = crud.get_user_by_email(db, email)
     if not user: return RedirectResponse("/", status_code=303)
     
-    # CORREÇÃO 2: Removida a trava que expulsava o Admin daqui.
-    # Agora o admin pode ver suas próprias enquetes.
+    # O Admin agora pode ver este dashboard também (trava removida)
 
     user_polls = db.query(models.Poll).filter(models.Poll.creator_id == user.id).order_by(models.Poll.id.desc()).all()
     

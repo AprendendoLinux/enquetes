@@ -51,7 +51,7 @@
     .responsive-input { width: 160px !important; } 
     .mobile-menu-container { display: flex; align-items: center; gap: 0.5rem; }
     
-    /* --- CSS NOVO: Link Esqueci Minha Senha --- */
+    /* --- CSS DO LINK ESQUECI A SENHA --- */
     .forgot-pass-link {
         font-size: 0.65rem;
         color: rgba(255,255,255,0.5);
@@ -67,8 +67,7 @@
         .forgot-pass-link {
             position: absolute;
             top: 100%;
-            /* Ajuste fino para a esquerda */
-            right: 4px; 
+            right: 5px; /* Mantido o ajuste fino à esquerda solicitado anteriormente */
             margin-top: 4px;
             white-space: nowrap;
         }
@@ -217,8 +216,8 @@
     </div>
   </nav>
 
-  {# Altura original de 100px mantida #}
-  <div class="container" style="margin-top: 100px; margin-bottom: 60px;">
+  {# --- AJUSTE DE ESPAÇAMENTO: Aumentado para 140px para replicar o original --- #}
+  <div class="container" style="margin-top: 140px; margin-bottom: 60px;">
       {% block flash_messages %}
           {% if error %}
           <div class="alert alert-danger alert-dismissible fade show mb-4 shadow-sm border-0 rounded-3" role="alert">

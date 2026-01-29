@@ -131,6 +131,35 @@
         border-color: #212529;
         color: #212529;
     }
+
+    /* --- CSS DO OLHO MÁGICO (Adicionar ao final do style) --- */
+    .input-wrapper-password {
+        position: relative;
+    }
+    
+    .form-control-clean {
+        /* Garante espaço para o ícone não ficar em cima do texto */
+        padding-right: 45px; 
+    }
+
+    .btn-eye-toggle {
+        position: absolute;
+        right: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        border: none;
+        background: transparent;
+        color: #6c757d;
+        z-index: 5;
+        cursor: pointer;
+        padding: 5px;
+        display: flex;
+        align-items: center;
+    }
+    
+    .btn-eye-toggle:hover {
+        color: #212529;
+    }
 </style>
 {% endblock %}
 
@@ -221,17 +250,32 @@
                             <form action="/my_profile/change_password" method="post">
                                 <div class="mb-3">
                                     <label class="form-label small fw-bold text-muted ms-1">Senha Atual</label>
-                                    <input type="password" name="current_password" class="form-control form-control-clean bg-white" required>
+                                    <div class="input-wrapper-password">
+                                        <input type="password" id="current_password" name="current_password" class="form-control form-control-clean bg-white" required>
+                                        <button type="button" class="btn-eye-toggle" onclick="togglePassword('current_password', 'icon-curr')">
+                                            <i class="bi bi-eye" id="icon-curr"></i>
+                                        </button>
+                                    </div>
                                 </div>
                                 
                                 <div class="row g-3 mb-4">
                                     <div class="col-6">
                                         <label class="form-label small fw-bold text-muted ms-1">Nova Senha</label>
-                                        <input type="password" name="new_password" class="form-control form-control-clean bg-white" required>
+                                        <div class="input-wrapper-password">
+                                            <input type="password" id="new_password" name="new_password" class="form-control form-control-clean bg-white" required>
+                                            <button type="button" class="btn-eye-toggle" onclick="togglePassword('new_password', 'icon-new')">
+                                                <i class="bi bi-eye" id="icon-new"></i>
+                                            </button>
+                                        </div>
                                     </div>
                                     <div class="col-6">
                                         <label class="form-label small fw-bold text-muted ms-1">Confirmar</label>
-                                        <input type="password" name="confirm_password" class="form-control form-control-clean bg-white" required>
+                                        <div class="input-wrapper-password">
+                                            <input type="password" id="confirm_password" name="confirm_password" class="form-control form-control-clean bg-white" required>
+                                            <button type="button" class="btn-eye-toggle" onclick="togglePassword('confirm_password', 'icon-confirm')">
+                                                <i class="bi bi-eye" id="icon-confirm"></i>
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
 
@@ -332,5 +376,21 @@
     modalElement.addEventListener('hidden.bs.modal', function () {
         if (!btnConfirm.disabled) avatarInput.value = ''; 
     });
+
+    // Função para alternar visibilidade da senha
+    function togglePassword(inputId, iconId) {
+        const input = document.getElementById(inputId);
+        const icon = document.getElementById(iconId);
+        
+        if (input.type === "password") {
+            input.type = "text";
+            icon.classList.remove("bi-eye");
+            icon.classList.add("bi-eye-slash");
+        } else {
+            input.type = "password";
+            icon.classList.remove("bi-eye-slash");
+            icon.classList.add("bi-eye");
+        }
+    }
 </script>
 {% endblock %}

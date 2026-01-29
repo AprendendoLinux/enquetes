@@ -1,160 +1,277 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Criar Conta - Sistema de Enquetes</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-  <style>
-    body { background: #f0f2f5; font-family: 'Segoe UI', system-ui, sans-serif; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
-    
-    .card-split { border: none; border-radius: 24px; box-shadow: 0 20px 60px rgba(0,0,0,0.1); overflow: hidden; max-width: 1000px; width: 100%; margin: auto; }
-    .brand-panel { background: linear-gradient(135deg, #212529 0%, #343a40 100%); color: white; padding: 3rem; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
-    .form-panel { padding: 3rem; background: white; }
-    .logo-brand { width: 180px; height: auto; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.2)); margin-bottom: 1.5rem; }
+{% extends "base.html" %}
 
-    /* Inputs e Grupos */
+{% block title %}Criar Conta - Sistema de Enquetes{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* --- 1. CONFIGURAÇÃO DO NOVO LOGIN NO TOPO --- */
+    .input-dark-theme { 
+        background-color: #2c3237; 
+        border: 1px solid #495057; 
+        color: #e9ecef; 
+        font-size: 0.85rem; 
+        border-radius: 6px; 
+        padding: 0.4rem 0.75rem;
+        width: 150px; 
+        transition: border-color 0.2s;
+    }
+    .input-dark-theme::placeholder { color: #adb5bd; }
+    .input-dark-theme:focus { 
+        background-color: #343a40; 
+        border-color: #6c757d; 
+        color: #fff; 
+        box-shadow: none; 
+        outline: none;
+    }
+    
+    .btn-login-matte { 
+        background-color: #f8f9fa; 
+        color: #212529; 
+        font-weight: 700; 
+        font-size: 0.85rem; 
+        border-radius: 6px; 
+        padding: 0.4rem 1.2rem; 
+        white-space: nowrap;
+        border: 1px solid #f8f9fa;
+    }
+    .btn-login-matte:hover { background-color: #e2e6ea; }
+
+    /* Ajuste para telas pequenas (Mobile) */
+    @media (max-width: 991.98px) {
+        .mobile-login-form { 
+            flex-direction: column; 
+            align-items: stretch !important; 
+            gap: 10px !important; 
+            width: 100%; 
+            margin-top: 15px;
+        }
+        .input-dark-theme { width: 100%; }
+        .btn-login-matte { width: 100%; }
+    }
+
+    /* --- 2. LAYOUT DO CARD (VISUAL ARREDONDADO) --- */
+    .register-wrapper {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        /* Cálculo para centralizar descontando o topo fixo */
+        min-height: calc(90vh - 100px); 
+        padding-bottom: 40px;
+    }
+
+    .card-split { 
+        border: none; 
+        /* !important garante que sobrescreva qualquer estilo do bootstrap */
+        border-radius: 24px !important; 
+        /* CRUCIAL: overflow hidden corta as pontas quadradas das imagens internas */
+        overflow: hidden !important; 
+        box-shadow: 0 20px 60px rgba(0,0,0,0.15); 
+        max-width: 1000px; 
+        width: 100%; 
+        background-color: #fff; 
+    }
+
+    /* Painel Esquerdo (Marca) */
+    .brand-panel { 
+        background: linear-gradient(135deg, #212529 0%, #343a40 100%); 
+        color: white; 
+        padding: 3rem; 
+        display: flex; 
+        flex-direction: column; 
+        justify-content: center; 
+        align-items: center; 
+        text-align: center; 
+        min-height: 100%; 
+    }
+    
+    /* Painel Direito (Formulário) */
+    .form-panel { 
+        padding: 3rem; 
+        background: white; 
+    }
+
+    .logo-brand { 
+        width: 180px; 
+        height: auto; 
+        filter: drop-shadow(0 4px 6px rgba(0,0,0,0.2)); 
+        margin-bottom: 1.5rem; 
+    }
+
+    /* --- 3. INPUTS DO FORMULÁRIO DE CADASTRO --- */
     .form-control-lg { padding: 0.75rem 1rem; font-size: 0.95rem; border: 1px solid #e0e0e0; background-color: #f8f9fa; }
     .form-control-lg:focus { background-color: #fff; box-shadow: none; border-color: #212529; }
-    
-    /* Ícone da Esquerda */
     .input-group-text { background: #f8f9fa; border: 1px solid #e0e0e0; border-right: none; color: #6c757d; }
     
-    /* Ajuste para inputs normais (ícone esquerda + input) */
+    /* Bordas arredondadas nos grupos de input */
     .input-group:not(.has-toggle) .form-control-lg { border-left: none; border-top-right-radius: 10px; border-bottom-right-radius: 10px; }
     .input-group:not(.has-toggle) .input-group-text { border-top-left-radius: 10px; border-bottom-left-radius: 10px; }
-
-    /* Ajuste para inputs com Toggle (ícone esq + input + botão dir) */
     .input-group.has-toggle .form-control-lg { border-left: none; border-right: none; }
     .input-group.has-toggle .input-group-text { border-top-left-radius: 10px; border-bottom-left-radius: 10px; }
     .input-group.has-toggle .btn-toggle { border: 1px solid #e0e0e0; border-left: none; background: #f8f9fa; border-top-right-radius: 10px; border-bottom-right-radius: 10px; color: #6c757d; }
-    .input-group.has-toggle .btn-toggle:hover { background: #e9ecef; color: #212529; }
 
     .form-label-sm { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.5px; color: #6c757d; text-transform: uppercase; margin-bottom: 4px; margin-left: 4px; }
     .btn-dark-lg { padding: 0.9rem; border-radius: 12px; font-weight: 700; letter-spacing: 0.5px; font-size: 1rem; transition: all 0.2s; }
-    .link-auth { text-decoration: none; color: #212529; font-weight: 600; }
     
     .password-requirements { font-size: 0.75rem; color: #6c757d; background: #fdfdfe; padding: 10px 15px; border-radius: 10px; border: 1px solid #f0f0f0; }
     .is-invalid { border-color: #dc3545 !important; }
     .invalid-feedback { font-size: 0.8rem; }
 
-    @media (max-width: 767.98px) {
+    /* --- 4. AJUSTE MOBILE DO CARD --- */
+    @media (max-width: 991.98px) {
+        .register-wrapper {
+            display: block; 
+            min-height: auto;
+            margin-top: 20px; /* Pequeno espaçamento do topo */
+        }
+        /* No mobile, garantimos que o arredondamento continue */
+        .card-split { border-radius: 24px !important; }
         .brand-panel { padding: 2rem 1rem; }
-        .logo-brand { width: 120px; margin-bottom: 1rem; }
         .form-panel { padding: 2rem 1.5rem; }
     }
-  </style>
-</head>
-<body>
+</style>
+{% endblock %}
 
-  <div class="card card-split">
-    <div class="row g-0">
-      
-      <div class="col-md-5 col-lg-4 brand-panel">
-        <img src="/static/logo.png" alt="Logo" class="logo-brand">
-        <h3 class="fw-bold mb-2">Junte-se a nós</h3>
-        <p class="text-white-50 small mb-0">
-          Crie sua conta em segundos e comece a publicar suas enquetes hoje mesmo.
-        </p>
-        <div class="mt-5 small text-white-50 d-none d-md-block opacity-50">
-          &copy; 2026 Sistema de Enquetes
-        </div>
-      </div>
+{# --- INJEÇÃO DO LOGIN NO TOPO --- #}
+{% block navbar_extra %}
+<form action="/auth/token" method="post" class="d-flex align-items-center gap-2 mobile-login-form ms-auto">
+    <input type="email" name="username" class="form-control input-dark-theme" placeholder="E-mail" required>
+    <input type="password" name="password" class="form-control input-dark-theme" placeholder="Senha" required>
+    <button type="submit" class="btn btn-login-matte shadow-sm">Entrar</button>
+</form>
+{% endblock %}
 
-      <div class="col-md-7 col-lg-8 form-panel">
+{% block content %}
+<div class="register-wrapper">
+    <div class="card card-split">
+      <div class="row g-0">
         
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h4 class="fw-bold text-dark mb-0">Criar Conta</h4>
-            <span class="small text-muted">
-                Já tem conta? <a href="/login" class="link-auth ms-1">Entrar</a>
-            </span>
+        <div class="col-md-5 col-lg-4 brand-panel">
+          <img src="/static/logo.png" alt="Logo" class="logo-brand">
+          <h3 class="fw-bold mb-2">Junte-se a nós</h3>
+          <p class="text-white-50 small mb-0">
+            Crie sua conta em segundos e comece a publicar suas enquetes hoje mesmo.
+          </p>
+          <div class="mt-5 small text-white-50 d-none d-md-block opacity-50">
+            &copy; 2026 Sistema de Enquetes
+          </div>
         </div>
-        
-        <form action="/auth/register" method="post" id="registerForm" novalidate>
-            <div class="row g-3 mb-3">
-                <div class="col-sm-6">
-                  <label class="form-label-sm">Nome</label>
-                  <div class="input-group">
-                    <span class="input-group-text"><i class="bi bi-person"></i></span>
-                    <input type="text" name="first_name" class="form-control form-control-lg" placeholder="João" required>
-                  </div>
-                </div>
-                <div class="col-sm-6">
-                  <label class="form-label-sm">Sobrenome</label>
-                  <div class="input-group">
-                    <span class="input-group-text"><i class="bi bi-person"></i></span>
-                    <input type="text" name="last_name" class="form-control form-control-lg" placeholder="Silva" required>
-                  </div>
-                </div>
-            </div>
 
-            <div class="mb-3">
-              <label class="form-label-sm">Email</label>
-              <div class="input-group">
-                <span class="input-group-text"><i class="bi bi-envelope"></i></span>
-                <input type="email" id="email" name="email" class="form-control form-control-lg" placeholder="seu@email.com" required>
-                <div class="invalid-feedback">
-                    Por favor, insira um endereço de e-mail válido.
+        <div class="col-md-7 col-lg-8 form-panel">
+          
+          <div class="mb-4">
+              <h4 class="fw-bold text-dark mb-0">Criar Conta</h4>
+          </div>
+          
+          <form action="/auth/register" method="post" id="registerForm" novalidate>
+              <div class="row g-3 mb-3">
+                  <div class="col-sm-6">
+                    <label class="form-label-sm">Nome</label>
+                    <div class="input-group">
+                      <span class="input-group-text"><i class="bi bi-person"></i></span>
+                      <input type="text" name="first_name" class="form-control form-control-lg" placeholder="João" required>
+                    </div>
+                  </div>
+                  <div class="col-sm-6">
+                    <label class="form-label-sm">Sobrenome</label>
+                    <div class="input-group">
+                      <span class="input-group-text"><i class="bi bi-person"></i></span>
+                      <input type="text" name="last_name" class="form-control form-control-lg" placeholder="Silva" required>
+                    </div>
+                  </div>
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label-sm">Email</label>
+                <div class="input-group">
+                  <span class="input-group-text"><i class="bi bi-envelope"></i></span>
+                  <input type="email" id="email" name="email" class="form-control form-control-lg" placeholder="seu@email.com" required>
+                  <div class="invalid-feedback">
+                      Por favor, insira um endereço de e-mail válido.
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div class="row g-3 mb-3">
-                <div class="col-sm-6">
-                    <label class="form-label-sm">Senha</label>
-                    <div class="input-group has-toggle">
-                        <span class="input-group-text"><i class="bi bi-key"></i></span>
-                        <input type="password" id="password" name="password" class="form-control form-control-lg" placeholder="Mínimo 6 dígitos" 
-                               pattern="(?=.*[A-Z])(?=.*[0-9])(?=.*[\W_]).{6,}" required>
-                        <button class="btn btn-toggle" type="button" onclick="togglePassword('password', 'icon-pass')">
-                            <i class="bi bi-eye" id="icon-pass"></i>
-                        </button>
-                    </div>
-                </div>
-                <div class="col-sm-6">
-                    <label class="form-label-sm">Confirmar</label>
-                    <div class="input-group has-toggle">
-                        <span class="input-group-text"><i class="bi bi-check-circle"></i></span>
-                        <input type="password" id="confirm_password" class="form-control form-control-lg" placeholder="Repita a senha" required>
-                        <button class="btn btn-toggle" type="button" onclick="togglePassword('confirm_password', 'icon-confirm')">
-                            <i class="bi bi-eye" id="icon-confirm"></i>
-                        </button>
-                    </div>
-                    <div id="passwordMismatch" class="invalid-feedback fw-bold mt-2">
-                        As senhas não coincidem.
-                    </div>
-                </div>
-            </div>
+              <div class="row g-3 mb-3">
+                  <div class="col-sm-6">
+                      <label class="form-label-sm">Senha</label>
+                      <div class="input-group has-toggle">
+                          <span class="input-group-text"><i class="bi bi-key"></i></span>
+                          <input type="password" id="password" name="password" class="form-control form-control-lg" placeholder="Mínimo 6 dígitos" 
+                                 pattern="(?=.*[A-Z])(?=.*[0-9])(?=.*[\W_]).{6,}" required>
+                          <button class="btn btn-toggle" type="button" onclick="togglePassword('password', 'icon-pass')">
+                              <i class="bi bi-eye" id="icon-pass"></i>
+                          </button>
+                      </div>
+                  </div>
+                  <div class="col-sm-6">
+                      <label class="form-label-sm">Confirmar</label>
+                      <div class="input-group has-toggle">
+                          <span class="input-group-text"><i class="bi bi-check-circle"></i></span>
+                          <input type="password" id="confirm_password" class="form-control form-control-lg" placeholder="Repita a senha" required>
+                          <button class="btn btn-toggle" type="button" onclick="togglePassword('confirm_password', 'icon-confirm')">
+                              <i class="bi bi-eye" id="icon-confirm"></i>
+                          </button>
+                      </div>
+                      <div id="passwordMismatch" class="invalid-feedback fw-bold mt-2">
+                          As senhas não coincidem.
+                      </div>
+                  </div>
+              </div>
 
-            <div class="mb-4">
-                <div class="password-requirements d-flex align-items-start">
-                    <i class="bi bi-info-circle-fill text-primary me-2 mt-1"></i>
-                    <div>
-                        <strong>Requisitos da senha:</strong>
-                        <ul class="small text-muted ps-3 mb-0">
-                        <li>6+ caracteres, 1 maiúscula, 1 número, 1 símbolo.</li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
+              <div class="mb-4">
+                  <div class="password-requirements d-flex align-items-start">
+                      <i class="bi bi-info-circle-fill text-primary me-2 mt-1"></i>
+                      <div>
+                          <strong>Requisitos da senha:</strong>
+                          <ul class="small text-muted ps-3 mb-0">
+                          <li>6+ caracteres, 1 maiúscula, 1 número, 1 símbolo.</li>
+                          </ul>
+                      </div>
+                  </div>
+              </div>
 
-            <div class="d-grid">
-              <button type="submit" class="btn btn-dark btn-dark-lg shadow-sm">
-                Cadastrar e Acessar <i class="bi bi-arrow-right-short ms-2 fs-5 align-middle"></i>
-              </button>
-            </div>
-        </form>
-        
-        <div class="text-center mt-4 text-muted small opacity-50 d-md-none">
-            &copy; 2026 Sistema de Enquetes
+              <div class="d-grid">
+                <button type="submit" class="btn btn-dark btn-dark-lg shadow-sm">
+                  Cadastrar e Acessar <i class="bi bi-arrow-right-short ms-2 fs-5 align-middle"></i>
+                </button>
+              </div>
+          </form>
+          
+          <div class="text-center mt-4 text-muted small opacity-50 d-md-none">
+              &copy; 2026 Sistema de Enquetes
+          </div>
         </div>
       </div>
     </div>
-  </div>
+</div>
+{% endblock %}
 
+{% block scripts %}
   <script>
-    // Função para mostrar/esconder senha
+    // --- LÓGICA CRÍTICA PARA LIMPAR O TOPO ---
+    document.addEventListener("DOMContentLoaded", function() {
+        // 1. Remove a lista de links (Início, etc) que vem do base.html
+        const navList = document.querySelector('.navbar-collapse .navbar-nav');
+        if(navList) navList.style.display = 'none';
+
+        // 2. Remove qualquer link (tag <a>) dentro da navbar (botões de login/registro antigos)
+        // O :not(form) garante que não quebremos algo se o form tiver link, mas aqui removemos tudo que é link
+        const oldLinks = document.querySelectorAll('.navbar-collapse a');
+        oldLinks.forEach(link => {
+            link.style.display = 'none';
+        });
+
+        // 3. (Segurança Extra) Remove especificamente botões com classe .btn que não sejam o nosso submit
+        const oldButtons = document.querySelectorAll('.navbar-collapse .btn');
+        oldButtons.forEach(btn => {
+            // Se o botão não estiver dentro de um form, esconde ele
+            if (!btn.closest('form')) {
+                btn.style.display = 'none';
+            }
+        });
+    });
+
+    // --- LÓGICA DO FORMULÁRIO (MANTIDA) ---
     function togglePassword(inputId, iconId) {
         const input = document.getElementById(inputId);
         const icon = document.getElementById(iconId);
@@ -172,7 +289,6 @@
 
     const emailInput = document.getElementById('email');
 
-    // Validação de Email em tempo real
     emailInput.addEventListener('input', function() {
         if (this.value.length > 0) {
             if (this.checkValidity()) {
@@ -194,7 +310,6 @@
       const mismatchMsg = document.getElementById('passwordMismatch');
       let isValid = true;
 
-      // Validação Senhas Iguais
       if (password.value !== confirmPassword.value) {
         confirmPassword.classList.add('is-invalid');
         confirmPassword.classList.remove('is-valid');
@@ -206,7 +321,6 @@
         mismatchMsg.style.display = 'none';
       }
 
-      // Validação Geral (inclui o email e regex da senha)
       if (!this.checkValidity()) {
         isValid = false;
         this.classList.add('was-validated');
@@ -218,12 +332,9 @@
       }
     });
 
-    // Limpa erro de confirmação
     document.getElementById('confirm_password').addEventListener('input', function() {
       this.classList.remove('is-invalid');
       document.getElementById('passwordMismatch').style.display = 'none';
     });
   </script>
-
-</body>
-</html>
+{% endblock %}

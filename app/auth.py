@@ -232,3 +232,22 @@ def reset_password_action(
     crud.update_user_password(db, user.id, new_hash)
     
     return templates.TemplateResponse("reset_success.html", {"request": request})
+
+@router.post("/resend-verification")
+def resend_verification(
+    request: Request,
+    background_tasks: BackgroundTasks,
+    email: str = Form(...),
+    db: Session = Depends(get_db)
+):
+    user = crud.get_user_by_email(db, email)
+    
+    # Se o usuário existe e ainda não foi verificado, reenviamos
+    if user and not user.is_verified:
+        verify_token_str = create_verification_token(email)
+        base_url = str(request.base_url)
+        background_tasks.add_task(send_verification_email, email, verify_token_str, base_url)
+        return {"status": "success", "message": "E-mail reenviado com sucesso."}
+    
+    # Se já estiver verificado ou não existir, retornamos erro ou sucesso falso (segurança)
+    return {"status": "error", "message": "Não foi possível reenviar. Verifique se a conta já está ativa."}

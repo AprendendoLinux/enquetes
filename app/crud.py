@@ -84,14 +84,31 @@ def activate_user(db: Session, user: models.User):
     db.refresh(user)
     return user
 
-def update_user_details(db: Session, user_id: int, first_name: str, last_name: str, email: str, hashed_password: str = None):
+def update_user_details(
+    db: Session, 
+    user_id: int, 
+    first_name: str, 
+    last_name: str, 
+    email: str, 
+    hashed_password: str = None, 
+    avatar_path: str = None, 
+    remove_avatar: bool = False
+):
     user = db.query(models.User).filter(models.User.id == user_id).first()
     if user:
         user.first_name = first_name
         user.last_name = last_name
         user.email = email
+        
         if hashed_password:
             user.hashed_password = hashed_password
+            
+        # Lógica do Avatar
+        if remove_avatar:
+            user.avatar_path = None
+        elif avatar_path:
+            user.avatar_path = avatar_path
+            
         db.commit()
         db.refresh(user)
     return user

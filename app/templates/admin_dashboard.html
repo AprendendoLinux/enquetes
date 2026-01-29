@@ -242,7 +242,7 @@
     {% if u.id != admin.id %}
     <div class="modal fade" id="editUserModal{{ u.id }}" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
-            <form class="modal-content rounded-4 shadow border-0" action="/admin/users/{{ u.id }}/update" method="post">
+            <form class="modal-content rounded-4 shadow border-0" action="/admin/users/{{ u.id }}/update" method="post" enctype="multipart/form-data">
                 
                 <div class="modal-header border-0 pb-0 pt-4 px-4">
                     <div class="d-flex align-items-center">
@@ -258,19 +258,42 @@
                 </div>
 
                 <div class="modal-body p-4">
+                    
+                    <div class="text-center mb-4">
+                        <div class="modal-avatar-wrapper">
+                            {% if u.avatar_path %}
+                                <img src="{{ u.avatar_path }}" id="avatar_preview_{{ u.id }}" class="modal-avatar-img">
+                            {% else %}
+                                <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' fill='%23dee2e6' class='bi bi-person-fill' viewBox='0 0 16 16'%3E%3Cpath d='M3 14s-1 0-1-1 1-4 6-4 6 3 6 4-1 1-1 1H3Zm5-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z'/%3E%3C/svg%3E" 
+                                     id="avatar_preview_{{ u.id }}" class="modal-avatar-img">
+                            {% endif %}
+                            
+                            <label for="upload_input_{{ u.id }}" class="btn-modal-upload" title="Alterar Foto">
+                                <i class="bi bi-camera-fill small"></i>
+                            </label>
+
+                            <button type="button" class="btn-modal-remove" title="Remover Foto" onclick="markAvatarRemoval({{ u.id }})">
+                                <i class="bi bi-trash-fill small"></i>
+                            </button>
+                        </div>
+
+                        <input type="file" name="avatar" id="upload_input_{{ u.id }}" class="d-none" accept="image/*" onchange="previewAdminAvatar(this, 'avatar_preview_{{ u.id }}')">
+                        <input type="hidden" name="remove_avatar" id="remove_flag_{{ u.id }}" value="false">
+                    </div>
+
                     <div class="row g-3 mb-3">
                         <div class="col-6">
-                            <label class="form-label small fw-bold text-muted text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.5px;">Nome</label>
+                            <label class="form-label small fw-bold text-muted text-uppercase" style="font-size: 0.7rem;">Nome</label>
                             <input type="text" name="first_name" class="form-control rounded-3 bg-light border-0" value="{{ u.first_name }}" required>
                         </div>
                         <div class="col-6">
-                            <label class="form-label small fw-bold text-muted text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.5px;">Sobrenome</label>
+                            <label class="form-label small fw-bold text-muted text-uppercase" style="font-size: 0.7rem;">Sobrenome</label>
                             <input type="text" name="last_name" class="form-control rounded-3 bg-light border-0" value="{{ u.last_name }}" required>
                         </div>
                     </div>
 
                     <div class="mb-4">
-                        <label class="form-label small fw-bold text-muted text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.5px;">E-mail de Acesso</label>
+                        <label class="form-label small fw-bold text-muted text-uppercase" style="font-size: 0.7rem;">E-mail</label>
                         <div class="input-group">
                             <span class="input-group-text bg-light border-0 text-muted"><i class="bi bi-envelope"></i></span>
                             <input type="email" name="email" class="form-control rounded-end-3 bg-light border-0" value="{{ u.email }}" required>
@@ -303,7 +326,6 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="form-text small mt-2 text-muted">Preencha apenas se desejar alterar o acesso deste usuário.</div>
                     </div>
                 </div>
 
@@ -394,10 +416,94 @@
     .btn-eye-admin:hover {
         color: #212529;
     }
+
+    /* Avatar no Modal Admin */
+    .modal-avatar-wrapper {
+        position: relative;
+        width: 100px;
+        height: 100px;
+        margin: 0 auto 1rem auto;
+    }
+    
+    .modal-avatar-img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border-radius: 50%;
+        border: 4px solid #fff;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        background-color: #f8f9fa;
+    }
+
+    .btn-modal-upload {
+        position: absolute;
+        bottom: 0;
+        right: 0;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: #212529;
+        color: white;
+        border: 2px solid white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: transform 0.2s;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+    .btn-modal-upload:hover { transform: scale(1.1); background: #000; }
+
+    .btn-modal-remove {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: #dc3545;
+        color: white;
+        border: 2px solid white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: transform 0.2s;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+    .btn-modal-remove:hover { transform: scale(1.1); background: #b02a37; }
 {% endblock %}
 
 {% block scripts %}
 <script>
+    // Pré-visualização de avatar no modal admin
+    function previewAdminAvatar(input, imgId) {
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById(imgId).src = e.target.result;
+                // Se o usuário fez upload, garantimos que a flag de remover seja false
+                const userId = imgId.replace('avatar_preview_', '');
+                document.getElementById('remove_flag_' + userId).value = "false";
+            }
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+
+    // Marcar avatar para remoção
+    function markAvatarRemoval(userId) {
+        // Define a flag hidden como true
+        document.getElementById('remove_flag_' + userId).value = "true";
+        // Limpa o input de arquivo (caso tenha selecionado algo antes)
+        document.getElementById('upload_input_' + userId).value = "";
+        // Reseta a imagem visualmente para o placeholder
+        document.getElementById('avatar_preview_' + userId).src = ""; 
+        // Esconde a imagem (ou mostra um placeholder genérico via CSS se preferir)
+        // Aqui vamos forçar um src vazio que mostrará o "alt" ou um ícone se usarmos background
+        // Uma abordagem melhor: trocar o SRC para um placeholder transparente ou ícone
+        const img = document.getElementById('avatar_preview_' + userId);
+        img.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' fill='%23dee2e6' class='bi bi-person-fill' viewBox='0 0 16 16'%3E%3Cpath d='M3 14s-1 0-1-1 1-4 6-4 6 3 6 4-1 1-1 1H3Zm5-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z'/%3E%3C/svg%3E";
+    }
     // --- FUNÇÃO PARA MOSTRAR/OCULTAR SENHA (MODAL ADMIN) ---
     function toggleAdminPass(inputId, iconId) {
         const input = document.getElementById(inputId);

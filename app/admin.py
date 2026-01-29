@@ -152,6 +152,33 @@ def toggle_block_user(user_id: int, request: Request, db: Session = Depends(get_
         db.commit()
     return RedirectResponse("/admin?tab=users", status_code=303)
 
+
+@router.post("/users/{user_id}/update")
+def update_user_action(
+    user_id: int,
+    request: Request,
+    first_name: str = Form(...),
+    last_name: str = Form(...),
+    email: str = Form(...),
+    password: str = Form(None), # Senha é opcional
+    db: Session = Depends(get_db)
+):
+    admin = get_current_admin(request, db)
+    if not admin: return RedirectResponse("/login", status_code=303)
+    
+    # Verifica se o e-mail já existe em OUTRO usuário
+    existing_user = crud.get_user_by_email(db, email)
+    if existing_user and existing_user.id != user_id:
+        return RedirectResponse("/admin?tab=users&error=Este e-mail já está em uso por outro usuário.", status_code=303)
+
+    hashed_pw = None
+    if password and password.strip():
+        hashed_pw = get_password_hash(password)
+
+    crud.update_user_details(db, user_id, first_name, last_name, email, hashed_pw)
+    
+    return RedirectResponse("/admin?tab=users&success=Dados do usuário atualizados.", status_code=303)
+
 @router.post("/users/{user_id}/delete")
 def delete_user(user_id: int, request: Request, db: Session = Depends(get_db)):
     admin = get_current_admin(request, db)

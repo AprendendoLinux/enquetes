@@ -90,6 +90,11 @@
                                     </td>
                                     <td class="text-end pe-4 col-actions">
                                         {% if u.id != admin.id %}
+                                            <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 me-1" 
+                                                    data-bs-toggle="modal" data-bs-target="#editUserModal{{ u.id }}" title="Editar">
+                                                <i class="bi bi-pencil-fill"></i>
+                                            </button>
+
                                             <form action="/admin/users/{{ u.id }}/toggle_block" method="post" class="d-inline">
                                                 {% if u.is_blocked %}
                                                     <button class="btn btn-sm btn-outline-success rounded-pill px-3" title="Desbloquear"><i class="bi bi-unlock-fill"></i></button>
@@ -235,23 +240,46 @@
 
     {% for u in users %}
     {% if u.id != admin.id %}
-    <div class="modal fade" id="deleteUserModal{{ u.id }}" tabindex="-1" aria-hidden="true">
+    <div class="modal fade" id="editUserModal{{ u.id }}" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
-            <form class="modal-content rounded-4 shadow border-danger" action="/admin/users/{{ u.id }}/delete" method="post">
+            <form class="modal-content rounded-4 shadow" action="/admin/users/{{ u.id }}/update" method="post">
                 <div class="modal-header border-0 pb-0">
-                    <h5 class="modal-title fw-bold text-danger">Excluir Usuário?</h5>
+                    <h5 class="modal-title fw-bold">Editar Usuário</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body text-start">
-                    <p>Você está prestes a excluir <strong>{{ u.first_name }} {{ u.last_name }}</strong>.</p>
-                    <div class="alert alert-danger bg-danger bg-opacity-10 border-0 small d-flex align-items-center">
-                        <i class="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
-                        <div><strong>Atenção:</strong> Isso removerá todas as enquetes e votos criados por este usuário permanentemente.</div>
+                <div class="modal-body">
+                    <div class="text-center mb-4">
+                        <div class="d-inline-flex align-items-center justify-content-center bg-light rounded-circle" style="width: 60px; height: 60px;">
+                            <i class="bi bi-person-gear fs-3 text-secondary"></i>
+                        </div>
+                        <p class="small text-muted mt-2 mb-0">ID: {{ u.id }}</p>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col">
+                            <label class="form-label small fw-bold text-muted">Nome</label>
+                            <input type="text" name="first_name" class="form-control rounded-3" value="{{ u.first_name }}" required>
+                        </div>
+                        <div class="col">
+                            <label class="form-label small fw-bold text-muted">Sobrenome</label>
+                            <input type="text" name="last_name" class="form-control rounded-3" value="{{ u.last_name }}" required>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-muted">E-mail</label>
+                        <input type="email" name="email" class="form-control rounded-3" value="{{ u.email }}" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-muted">Redefinir Senha</label>
+                        <input type="password" name="password" class="form-control rounded-3" placeholder="Deixe vazio para manter a atual">
+                        <div class="form-text small"><i class="bi bi-info-circle me-1"></i> Preencha apenas se quiser alterar a senha do usuário.</div>
                     </div>
                 </div>
                 <div class="modal-footer border-0 pt-0">
                     <button type="button" class="btn btn-light rounded-pill" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-danger rounded-pill px-4">Sim, Excluir</button>
+                    <button type="submit" class="btn btn-primary rounded-pill px-4">Salvar Alterações</button>
                 </div>
             </form>
         </div>

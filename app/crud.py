@@ -83,3 +83,15 @@ def activate_user(db: Session, user: models.User):
     db.commit()
     db.refresh(user)
     return user
+
+def update_user_details(db: Session, user_id: int, first_name: str, last_name: str, email: str, hashed_password: str = None):
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if user:
+        user.first_name = first_name
+        user.last_name = last_name
+        user.email = email
+        if hashed_password:
+            user.hashed_password = hashed_password
+        db.commit()
+        db.refresh(user)
+    return user

@@ -72,18 +72,24 @@ def login_for_access_token(
 ):
     user = crud.get_user_by_email(db, form_data.username)
     if not user or not verify_password(form_data.password, user.hashed_password):
-        # Redireciona de volta com erro na URL (simples) ou renderiza template
         return RedirectResponse(url="/?error=Credenciais inválidas", status_code=303)
     
     if user.is_blocked:
          return RedirectResponse(url="/?error=Sua conta foi bloqueada.", status_code=303)
 
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    
+    # Gera o token com expiração
     access_token = create_access_token(
         data={"sub": user.email}, expires_delta=access_token_expires
     )
     
-    response = RedirectResponse(url="/dashboard", status_code=303)
+    # Lógica de redirecionamento (Setup Admin vs Dashboard User)
+    if user.email == "admin@admin":
+        response = RedirectResponse(url="/admin/setup", status_code=303)
+    else:
+        response = RedirectResponse(url="/dashboard", status_code=303)
+
     response.set_cookie(
         key="access_token", 
         value=access_token, 
@@ -99,7 +105,7 @@ def logout(response: Response):
     response.delete_cookie("access_token")
     return response
 
-# --- RECUPERAÇÃO DE SENHA (CORRIGIDO) ---
+# --- RECUPERAÇÃO DE SENHA ---
 
 @router.get("/forgot-password", response_class=HTMLResponse)
 def forgot_password_form(request: Request):
@@ -114,16 +120,12 @@ def forgot_password_action(
 ):
     user = crud.get_user_by_email(db, email)
     
-    # --- AQUI ESTÁ A LÓGICA QUE VOCÊ PEDIU ---
-    # Se o usuário não existir, retornamos erro visual para o usuário
     if not user:
         return templates.TemplateResponse("forgot_password.html", {
             "request": request,
             "error": "Este e-mail não está cadastrado em nossa base de dados."
         })
-    # -----------------------------------------
 
-    # Se existe, segue o fluxo normal
     reset_token = create_reset_token(email)
     base_url = str(request.base_url)
     background_tasks.add_task(send_reset_password_email, email, reset_token, base_url)
@@ -133,16 +135,11 @@ def forgot_password_action(
 
 @router.get("/reset-password/{token}", response_class=HTMLResponse)
 def reset_password_form(request: Request, token: str):
-    # Verifica se o token é válido apenas para exibir o formulário
     email = verify_reset_token(token)
     if not email:
         return templates.TemplateResponse("verify_failed.html", {"request": request}, status_code=400)
-    
     return templates.TemplateResponse("reset_password.html", {"request": request, "token": token})
 
-
-# --- ROTA POST CORRIGIDA PARA O ERRO 404 ---
-# Esta rota recebe o token via FORMULÁRIO (hidden input), não via URL
 @router.post("/reset-password") 
 def reset_password_action(
     request: Request,
@@ -182,7 +179,6 @@ def resend_verification(
     db: Session = Depends(get_db)
 ):
     user = crud.get_user_by_email(db, email)
-    
     if user and not user.is_verified:
         verify_token_str = create_verification_token(email)
         base_url = str(request.base_url)
@@ -191,7 +187,8 @@ def resend_verification(
     
     return {"status": "error", "message": "Usuário não encontrado ou já verificado."}
 
-@router.get("/verify-email/{token}")
+# --- ROTA CORRIGIDA AQUI (Era /verify-email, agora é /verify para combinar com o log) ---
+@router.get("/verify/{token}")
 def verify_email(request: Request, token: str, db: Session = Depends(get_db)):
     email = verify_email_token(token)
     if not email:
@@ -206,5 +203,4 @@ def verify_email(request: Request, token: str, db: Session = Depends(get_db)):
         
     user.is_verified = True
     db.commit()
-    
     return templates.TemplateResponse("verify_success.html", {"request": request})

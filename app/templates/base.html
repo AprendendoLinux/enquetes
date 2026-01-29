@@ -124,7 +124,8 @@
   <nav class="navbar navbar-expand-lg navbar-matte fixed-top">
     <div class="container">
       
-      <a class="navbar-brand d-flex align-items-center" href="{% if current_user and current_user.is_admin and request.url.path.startswith('/admin') %}/admin{% else %}/{% endif %}">
+      {# --- LOGO: Sempre para a Home --- #}
+      <a class="navbar-brand d-flex align-items-center" href="/">
         <img src="/static/logo.png" alt="Logo" width="50" height="50" class="d-inline-block align-text-top me-2">
         <span>Enquetes</span>
         
@@ -147,21 +148,20 @@
                     <i class="bi bi-house-door-fill me-1"></i> Início
                 </a>
 
-                {% if request.url.path.startswith('/admin') %}
-                    <a href="/dashboard" class="btn btn-outline-secondary btn-sm rounded-pill px-3 fw-bold me-lg-2 border-secondary text-light responsive-btn">
-                        <i class="bi bi-speedometer2 me-1"></i> Meu Painel
+                {# --- CORREÇÃO: Admin vê AMBOS os painéis --- #}
+                {% if current_user.is_admin %}
+                    <a href="/admin" class="btn btn-warning btn-sm rounded-pill px-3 fw-bold text-dark responsive-btn">
+                         <i class="bi bi-speedometer2 me-1"></i> Admin
                     </a>
-                {% else %}
-                    <a href="/create_poll" class="btn btn-primary btn-sm rounded-pill px-3 fw-bold responsive-btn">
-                        <i class="bi bi-plus-lg me-1"></i> Criar Nova
-                    </a>
-
-                    {% if current_user.is_admin %}
-                    <a class="btn btn-warning btn-sm rounded-pill px-3 fw-bold text-dark responsive-btn" href="/admin">
-                        <i class="bi bi-shield-lock-fill me-1"></i> Painel Admin
-                    </a>
-                    {% endif %}
                 {% endif %}
+
+                {# Botões Padrão para todos (incluindo Admin) #}
+                <a href="/create_poll" class="btn btn-primary btn-sm rounded-pill px-3 fw-bold responsive-btn">
+                    <i class="bi bi-plus-lg me-1"></i> Criar Nova
+                </a>
+                <a href="/dashboard" class="btn btn-outline-secondary btn-sm rounded-pill px-3 fw-bold me-lg-2 border-secondary text-light responsive-btn">
+                    <i class="bi bi-speedometer2 me-1"></i> Meu Painel
+                </a>
 
                 <div class="dropdown responsive-btn">
                     <a class="btn btn-outline-light border-0 dropdown-toggle d-flex align-items-center gap-2 w-100 justify-content-between justify-content-lg-start" href="#" role="button" data-bs-toggle="dropdown">
@@ -176,27 +176,30 @@
                             <span class="fw-semibold">{{ current_user.first_name }} {{ current_user.last_name }}</span>
                         </div>
                     </a>
+                    
                     <ul class="dropdown-menu dropdown-menu-end dropdown-menu-dark shadow w-100">
-                        <li><a class="dropdown-item" href="/dashboard"><i class="bi bi-speedometer2 me-2"></i>Dashboard</a></li>
+                        {% if current_user.is_admin %}
+                             <li><a class="dropdown-item" href="/admin"><i class="bi bi-shield-lock me-2"></i>Painel Admin</a></li>
+                        {% endif %}
+                        
+                        <li><a class="dropdown-item" href="/dashboard"><i class="bi bi-speedometer2 me-2"></i>Meu Dashboard</a></li>
                         <li><a class="dropdown-item" href="/my_profile"><i class="bi bi-person-circle me-2"></i>Meu Perfil</a></li>
                         <li><hr class="dropdown-divider bg-secondary opacity-25"></li>
-                        <li><a class="dropdown-item text-danger" href="/logout"><i class="bi bi-box-arrow-right me-2"></i>Sair</a></li>
+                        <li><a class="dropdown-item text-danger" href="/auth/logout"><i class="bi bi-box-arrow-right me-2"></i>Sair</a></li>
                     </ul>
                 </div>
 
             {% else %}
-                {# --- LÓGICA CORRIGIDA: MOSTRA FORMULÁRIO EM TODAS AS PÁGINAS EXCETO REGISTER --- #}
+                {# --- LOGIN / REGISTER FORM --- #}
                 {% if request.url.path != '/register' %}
                     <form action="/auth/token" method="post" class="d-flex align-items-center gap-2 mobile-menu-container">
                         <input type="email" name="username" class="form-control input-dark-theme responsive-input" placeholder="E-mail" required>
                         
-                        {# --- WRAPPER DA SENHA + LINK --- #}
                         <div class="password-wrapper">
                             <input type="password" name="password" class="form-control input-dark-theme responsive-input" placeholder="Senha" required>
                             <a href="/auth/forgot-password" class="forgot-pass-link">Esqueci minha senha</a>
                         </div>
-                        {# ----------------------------- #}
-
+                        
                         <button type="submit" class="btn btn-login-matte shadow-sm responsive-btn">Entrar</button>
                     </form>
                     <div class="vr-matte"></div>
@@ -209,14 +212,12 @@
                 {% endif %}
             {% endif %}
             
-            {# --- BOTÃO EXTRA (EX: VER RESULTADOS) --- #}
             {% block navbar_extra %}{% endblock %}
         </div>
       </div>
     </div>
   </nav>
 
-  {# --- AJUSTE FINAL: 120px --- #}
   <div class="container" style="margin-top: 120px; margin-bottom: 60px;">
       {% block flash_messages %}
           {% if error %}

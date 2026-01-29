@@ -50,143 +50,154 @@ def create_default_admin():
             )
             db.add(admin_user)
             db.commit()
-            logger.info("✅ Admin criado: admin@admin / senha: admin")
-        else:
-            logger.info("ℹ️ Tabela de usuários já contém dados. Criação do admin padrão ignorada.")
-            
+            logger.info("--- ADMIN CRIADO: admin@admin / admin ---")
     except Exception as e:
-        logger.error(f"Erro ao verificar/criar admin padrão: {e}")
+        logger.error(f"Erro ao criar admin padrão: {e}")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    logger.info("⏳ Aguardando banco de dados iniciar...")
-    db_ready = False
-    while not db_ready:
+    # --- LÓGICA DE RETRY (AGUARDAR BANCO) ---
+    max_retries = 30
+    retry_interval = 2
+    logger.info("⏳ Iniciando verificação de conexão com o Banco de Dados...")
+    for i in range(max_retries):
         try:
             with engine.connect() as connection:
                 connection.execute(text("SELECT 1"))
-            db_ready = True
-            logger.info("✅ Banco de dados conectado com sucesso!")
+            logger.info("✅ Banco de Dados conectado com sucesso!")
+            break
         except Exception as e:
-            logger.warning(f"⚠️ Banco ainda não disponível. Erro: {e}")
-            logger.warning("Tentando novamente em 2 segundos...")
-            time.sleep(2)
-    
-    logger.info("🛠️ Verificando/Criando tabelas...")
-    Base.metadata.create_all(bind=engine)
-    create_default_admin()
+            logger.warning(f"⚠️ Banco indisponível. Tentativa {i+1}/{max_retries}...")
+            time.sleep(retry_interval)
+    else:
+        logger.error("❌ Falha crítica: Não foi possível conectar ao banco.")
+
+    # Startup normal
+    try:
+        models.Base.metadata.create_all(bind=engine)
+        create_default_admin()
+    except Exception as e:
+        logger.error(f"Erro durante a inicialização das tabelas: {e}")
+
     yield
-    logger.info("🛑 Aplicação encerrando...")
 
 app = FastAPI(lifespan=lifespan)
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/token")
-
 app.mount("/static", StaticFiles(directory="static"), name="static")
+
 templates = Jinja2Templates(directory="templates")
 
+# Incluindo Rotas
 app.include_router(auth.router, prefix="/auth", tags=["auth"])
 app.include_router(poll.router, prefix="/polls", tags=["polls"])
-app.include_router(admin.router, prefix="/admin", tags=["admin"]) 
+app.include_router(admin.router, prefix="/admin", tags=["admin"])
 
-# --- ROTAS PRINCIPAIS ---
+# --- CORREÇÃO 1: Rota /login redireciona para Home ---
+@app.get("/login")
+def login_redirect():
+    return RedirectResponse("/", status_code=303)
 
+# --- ROTA DA HOME PAGE ---
 @app.get("/", response_class=HTMLResponse)
-async def root(request: Request, db: Session = Depends(get_db), access_token: str | None = Cookie(default=None)):
+def read_root(
+    request: Request, 
+    db: Session = Depends(get_db),
+    error: str = None,
+    success: str = None
+):
     user = None
-    if access_token:
-        email = verify_token(access_token)
+    token = request.cookies.get("access_token")
+    if token:
+        email = verify_token(token)
         if email:
             user = crud.get_user_by_email(db, email)
-    
-    recent_polls = crud.get_recent_public_polls(db)
+            # CORREÇÃO: Se estiver logado (mesmo admin), vai pro Dashboard pessoal
+            if user:
+                return RedirectResponse("/dashboard", status_code=303)
+
+    recent_polls = crud.get_recent_public_polls(db, limit=12)
     
     for p in recent_polls:
-         p.vote_count = db.query(models.Vote).filter(models.Vote.poll_id == p.id).count()
+        p.vote_count = db.query(models.Vote).filter(models.Vote.poll_id == p.id).count()
 
     return templates.TemplateResponse("login.html", {
         "request": request, 
-        "polls": recent_polls, 
-        "user": user 
+        "polls": recent_polls,
+        "user": user,
+        "error": error,
+        "success": success
     })
 
-@app.get("/login", response_class=HTMLResponse)
-async def login_page_redirect():
-    return RedirectResponse("/", status_code=303)
-
+# --- ROTA DE REGISTRO ---
 @app.get("/register", response_class=HTMLResponse)
-async def register_page(request: Request):
+def register_page(request: Request):
     return templates.TemplateResponse("register.html", {"request": request})
 
+# --- DASHBOARD ---
 @app.get("/dashboard", response_class=HTMLResponse)
-async def dashboard(request: Request, db: Session = Depends(get_db), access_token: str | None = Cookie(default=None)):
-    email = verify_token(access_token)
-    if not email:
-        return RedirectResponse("/login", status_code=303)
+def dashboard(
+    request: Request, 
+    db: Session = Depends(get_db),
+    error: str = None,
+    success: str = None
+):
+    token = request.cookies.get("access_token")
+    if not token: return RedirectResponse("/", status_code=303)
+    
+    email = verify_token(token)
+    if not email: return RedirectResponse("/", status_code=303)
     
     user = crud.get_user_by_email(db, email)
-    if not user:
-        return RedirectResponse("/login", status_code=303)
-
-    polls = db.query(models.Poll).filter(models.Poll.creator_id == user.id).all()
+    if not user: return RedirectResponse("/", status_code=303)
     
-    for p in polls:
-        votes = db.query(models.Vote).filter(models.Vote.poll_id == p.id).all()
-        p.vote_count = len(votes)
-        
-        options = db.query(models.Option).filter(models.Option.poll_id == p.id).all()
-        p.results_summary = []
-        
-        for opt in options:
-            opt_votes = sum(1 for v in votes if v.option_id == opt.id)
-            percent = 0
-            if p.vote_count > 0:
-                percent = round((opt_votes / p.vote_count) * 100, 1)
-            
-            p.results_summary.append({
-                "text": opt.text,
-                "votes": opt_votes,
-                "percent": percent
-            })
-        
-        p.results_summary.sort(key=lambda x: x['votes'], reverse=True)
+    # CORREÇÃO 2: Removida a trava que expulsava o Admin daqui.
+    # Agora o admin pode ver suas próprias enquetes.
 
-    return templates.TemplateResponse("dashboard.html", {"request": request, "user": user, "polls": polls})
+    user_polls = db.query(models.Poll).filter(models.Poll.creator_id == user.id).order_by(models.Poll.id.desc()).all()
+    
+    return templates.TemplateResponse("dashboard.html", {
+        "request": request, 
+        "user": user, 
+        "polls": user_polls,
+        "error": error,
+        "success": success
+    })
 
 @app.get("/create_poll", response_class=HTMLResponse)
-async def create_poll_page(request: Request, db: Session = Depends(get_db), access_token: str | None = Cookie(default=None)):
-    email = verify_token(access_token)
-    if not email: return RedirectResponse("/login", status_code=303)
+def create_poll_page(request: Request, db: Session = Depends(get_db)):
+    token = request.cookies.get("access_token")
+    if not token: return RedirectResponse("/", status_code=303)
+    email = verify_token(token)
+    if not email: return RedirectResponse("/", status_code=303)
     user = crud.get_user_by_email(db, email)
+    
     return templates.TemplateResponse("create_poll.html", {"request": request, "user": user})
 
 @app.post("/create_poll")
-async def create_poll_action(
+def create_poll_action(
     request: Request,
     title: str = Form(...),
     description: str = Form(None),
+    options: list[str] = Form(...),
     multiple_choice: bool = Form(False),
     check_ip: bool = Form(False),
     is_public: bool = Form(False),
-    options: list[str] = Form(...),
-    deadline: str | None = Form(None),
+    deadline: str = Form(None),
     image_file: UploadFile = File(None),
-    db: Session = Depends(get_db),
-    access_token: str | None = Cookie(default=None)
+    db: Session = Depends(get_db)
 ):
-    email = verify_token(access_token)
-    if not email:
-        return RedirectResponse("/login", status_code=303)
-    
+    token = request.cookies.get("access_token")
+    if not token: return RedirectResponse("/", status_code=303)
+    email = verify_token(token)
     user = crud.get_user_by_email(db, email)
-    
-    cleaned_options = [opt.strip() for opt in options if opt.strip()]
-    if len(cleaned_options) < 2:
-        return templates.TemplateResponse("create_poll.html", {
-            "request": request, 
-            "user": user,
-            "error": "A enquete precisa de pelo menos duas opções válidas."
-        })
+
+    image_path = None
+    if image_file and image_file.filename:
+        safe_filename = f"{uuid.uuid4()}_{image_file.filename}"
+        file_location = os.path.join(UPLOAD_DIR, safe_filename)
+        with open(file_location, "wb") as buffer:
+            shutil.copyfileobj(image_file.file, buffer)
+        image_path = f"/static/uploads/{safe_filename}"
 
     deadline_dt = None
     if deadline:
@@ -195,48 +206,38 @@ async def create_poll_action(
         except ValueError:
             pass
 
-    image_path_db = None
-    if image_file and image_file.filename:
-        extension = image_file.filename.split(".")[-1]
-        new_filename = f"{uuid.uuid4()}.{extension}"
-        file_location = f"{UPLOAD_DIR}/{new_filename}"
-        with open(file_location, "wb") as buffer:
-            shutil.copyfileobj(image_file.file, buffer)
-        image_path_db = f"/static/uploads/{new_filename}"
-
-    poll_create = schemas.PollCreate(
+    poll_data = schemas.PollCreate(
         title=title,
         description=description,
+        options=[opt for opt in options if opt.strip()],
         multiple_choice=multiple_choice,
         check_ip=check_ip,
         is_public=is_public,
-        options=cleaned_options,
         deadline=deadline_dt,
-        image_path=image_path_db
+        image_path=image_path
     )
     
-    crud.create_poll(db, poll_create, creator_id=user.id)
-    return RedirectResponse("/dashboard", status_code=303)
-
-# --- ROTAS DE PERFIL ---
+    crud.create_poll(db, poll_data, creator_id=user.id)
+    
+    return RedirectResponse("/dashboard?success=Enquete criada com sucesso!", status_code=303)
 
 @app.get("/my_profile", response_class=HTMLResponse)
-async def my_profile_page(request: Request, success: str = None, error: str = None, db: Session = Depends(get_db), access_token: str | None = Cookie(default=None)):
-    if not access_token:
-        return RedirectResponse("/login", status_code=303)
-
-    email = verify_token(access_token)
-    if not email: 
-        return RedirectResponse("/login", status_code=303)
-    
+def my_profile(request: Request, db: Session = Depends(get_db), error: str = None, success: str = None):
+    token = request.cookies.get("access_token")
+    if not token: return RedirectResponse("/", status_code=303)
+    email = verify_token(token)
     user = crud.get_user_by_email(db, email)
-    if not user:
-        return RedirectResponse("/login", status_code=303)
+    if not user: return RedirectResponse("/", status_code=303)
 
-    return templates.TemplateResponse("my_profile.html", {"request": request, "user": user, "success": success, "error": error})
+    return templates.TemplateResponse("my_profile.html", {
+        "request": request, 
+        "user": user,
+        "error": error,
+        "success": success
+    })
 
-@app.post("/my_profile/update_info")
-async def update_info(
+@app.post("/my_profile/update_name")
+def update_name(
     first_name: str = Form(...),
     last_name: str = Form(...),
     db: Session = Depends(get_db),
@@ -250,10 +251,11 @@ async def update_info(
     user.first_name = first_name
     user.last_name = last_name
     db.commit()
-    return RedirectResponse("/my_profile?success=Dados atualizados com sucesso!", status_code=303)
+    
+    return RedirectResponse("/my_profile?success=Nome atualizado com sucesso.", status_code=303)
 
 @app.post("/my_profile/upload_avatar")
-async def upload_avatar(
+def upload_avatar(
     avatar: UploadFile = File(...),
     db: Session = Depends(get_db),
     access_token: str | None = Cookie(default=None)
@@ -262,29 +264,32 @@ async def upload_avatar(
     email = verify_token(access_token)
     if not email: return RedirectResponse("/login", status_code=303)
     
-    user = crud.get_user_by_email(db, email)
+    if not avatar.content_type.startswith("image/"):
+        return RedirectResponse("/my_profile?error=O arquivo deve ser uma imagem.", status_code=303)
 
-    if user.avatar_path and os.path.exists(user.avatar_path.lstrip("/")):
-        try: os.remove(user.avatar_path.lstrip("/"))
-        except Exception: pass
-
-    extension = "png"
-    new_filename = f"avatar_{user.id}_{uuid.uuid4()}.{extension}"
-    file_location = f"{UPLOAD_DIR}/{new_filename}"
+    safe_filename = f"avatar_{uuid.uuid4()}_{avatar.filename}"
+    file_location = os.path.join(UPLOAD_DIR, safe_filename)
     
     with open(file_location, "wb") as buffer:
         shutil.copyfileobj(avatar.file, buffer)
+        
+    user = crud.get_user_by_email(db, email)
     
-    user.avatar_path = f"/static/uploads/{new_filename}"
+    if user.avatar_path and os.path.exists(user.avatar_path.lstrip("/")):
+        try: os.remove(user.avatar_path.lstrip("/"))
+        except: pass
+
+    user.avatar_path = f"/static/uploads/{safe_filename}"
     db.commit()
     
-    return {"status": "ok"}
+    return RedirectResponse("/my_profile?success=Foto de perfil atualizada.", status_code=303)
 
 @app.post("/my_profile/request_email_change")
-async def request_email_change(
+def request_email_change(
     request: Request,
     background_tasks: BackgroundTasks,
     new_email: str = Form(...),
+    current_password: str = Form(...),
     db: Session = Depends(get_db),
     access_token: str | None = Cookie(default=None)
 ):
@@ -293,49 +298,44 @@ async def request_email_change(
     if not email: return RedirectResponse("/login", status_code=303)
     user = crud.get_user_by_email(db, email)
 
-    # 1. VERIFICAÇÃO DE DUPLICIDADE
-    existing = crud.get_user_by_email(db, new_email)
-    if existing:
-        return RedirectResponse("/my_profile?error=Este e-mail já está em uso por outro usuário.", status_code=303)
+    if not verify_password(current_password, user.hashed_password):
+        return RedirectResponse("/my_profile?error=Senha incorreta.", status_code=303)
+    
+    if crud.get_user_by_email(db, new_email):
+        return RedirectResponse("/my_profile?error=Este e-mail já está em uso.", status_code=303)
 
-    token = str(uuid.uuid4())
     user.pending_email = new_email
-    user.email_verification_token = token
+    token_str = str(uuid.uuid4())
+    user.email_verification_token = token_str
     db.commit()
 
     base_url = str(request.base_url)
-    background_tasks.add_task(send_change_email_request, new_email, token, base_url)
+    background_tasks.add_task(send_change_email_request, new_email, token_str, base_url)
 
-    return RedirectResponse("/my_profile?success=Um link de confirmação foi enviado para o novo e-mail.", status_code=303)
+    return RedirectResponse("/my_profile?success=Link de confirmação enviado para o novo e-mail.", status_code=303)
 
-@app.get("/my_profile/verify_email")
-async def verify_email_change(request: Request, token: str, db: Session = Depends(get_db)):
+@app.get("/my_profile/confirm_email_change/{token}", response_class=HTMLResponse)
+def confirm_email_change(
+    request: Request,
+    token: str,
+    db: Session = Depends(get_db)
+):
     user = db.query(models.User).filter(models.User.email_verification_token == token).first()
     
-    # 1. ERRO
     if not user or not user.pending_email:
-        return RedirectResponse("/login?error=Link de verificação inválido ou expirado.", status_code=303)
-
-    # 2. VERIFICAÇÃO DE DUPLICIDADE (FINAL)
-    existing_user = crud.get_user_by_email(db, user.pending_email)
-    if existing_user and existing_user.id != user.id:
-        return RedirectResponse("/login?error=Este e-mail já foi cadastrado por outro usuário nesse meio tempo.", status_code=303)
-
-    # 3. EFETIVAÇÃO
+        return RedirectResponse("/my_profile?error=Link inválido ou expirado.", status_code=303)
+    
     user.email = user.pending_email
     user.pending_email = None
     user.email_verification_token = None
     db.commit()
 
-    # 4. RENDERIZA PÁGINA DE SUCESSO
-    # Importante: Passamos user=None para o base.html renderizar a navbar de "não logado"
-    response = templates.TemplateResponse("email_change_success.html", {"request": request, "user": None})
+    response = templates.TemplateResponse("email_change_success.html", {"request": request})
     response.delete_cookie("access_token")
     return response
 
-# --- NOVA ROTA: ALTERAR SENHA (CORREÇÃO DO ERRO 404) ---
 @app.post("/my_profile/change_password")
-async def change_password_profile(
+def change_password(
     current_password: str = Form(...),
     new_password: str = Form(...),
     confirm_password: str = Form(...),
@@ -345,25 +345,21 @@ async def change_password_profile(
     if not access_token: return RedirectResponse("/login", status_code=303)
     email = verify_token(access_token)
     if not email: return RedirectResponse("/login", status_code=303)
-    
     user = crud.get_user_by_email(db, email)
-    
-    # 1. Verifica se a senha atual está correta
+
     if not verify_password(current_password, user.hashed_password):
-        return RedirectResponse("/my_profile?error=A senha atual está incorreta.", status_code=303)
-    
-    # 2. Verifica se as novas senhas conferem
+        return RedirectResponse("/my_profile?error=Senha atual incorreta.", status_code=303)
+
     if new_password != confirm_password:
         return RedirectResponse("/my_profile?error=A nova senha e a confirmação não coincidem.", status_code=303)
-        
-    # 3. Atualiza no banco
-    new_hash = get_password_hash(new_password)
-    crud.update_user_password(db, user.id, new_hash)
+
+    user.hashed_password = get_password_hash(new_password)
+    db.commit()
     
-    return RedirectResponse("/my_profile?success=Sua senha foi alterada com sucesso.", status_code=303)
+    return RedirectResponse("/my_profile?success=Senha foi alterada com sucesso.", status_code=303)
 
 @app.post("/my_profile/delete_account")
-async def delete_account(
+def delete_account(
     password: str = Form(...),
     db: Session = Depends(get_db),
     access_token: str | None = Cookie(default=None)
@@ -387,12 +383,6 @@ async def delete_account(
     db.delete(user)
     db.commit()
 
-    response = RedirectResponse("/login?success=Sua conta foi excluída permanentemente.", status_code=303)
-    response.delete_cookie("access_token")
-    return response
-
-@app.get("/logout")
-async def logout():
-    response = RedirectResponse(url="/login", status_code=303)
+    response = RedirectResponse("/?success=Sua conta foi excluída com sucesso.", status_code=303)
     response.delete_cookie("access_token")
     return response

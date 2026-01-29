@@ -71,20 +71,28 @@ def login_for_access_token(
     db: Session = Depends(get_db)
 ):
     user = crud.get_user_by_email(db, form_data.username)
+    
+    # 1. Verifica credenciais (Usuário existe e senha bate)
     if not user or not verify_password(form_data.password, user.hashed_password):
         return RedirectResponse(url="/?error=Credenciais inválidas", status_code=303)
     
+    # 2. Verifica bloqueio
     if user.is_blocked:
-         return RedirectResponse(url="/?error=Sua conta foi bloqueada.", status_code=303)
+         return RedirectResponse(url="/?error=Sua conta foi bloqueada pelo administrador.", status_code=303)
 
+    # 3. Verifica e-mail confirmado (Opcional, se seu sistema exigir)
+    # if not user.is_verified:
+    #      return RedirectResponse(url="/?error=Por favor, verifique seu e-mail antes de entrar.", status_code=303)
+
+    # Sucesso: Gera Token
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     
-    # Gera o token com expiração
-    access_token = create_access_token(
-        data={"sub": user.email}, expires_delta=access_token_expires
-    )
+    # OBS: Se seu auth_utils.create_access_token aceita expires_delta, use assim:
+    # access_token = create_access_token(data={"sub": user.email}, expires_delta=access_token_expires)
+    # Caso contrário (versão antiga), use apenas data:
+    access_token = create_access_token(data={"sub": user.email})
     
-    # Lógica de redirecionamento (Setup Admin vs Dashboard User)
+    # Redirecionamento
     if user.email == "admin@admin":
         response = RedirectResponse(url="/admin/setup", status_code=303)
     else:
@@ -95,7 +103,8 @@ def login_for_access_token(
         value=access_token, 
         httponly=True,
         max_age=1800,
-        expires=1800
+        expires=1800,
+        samesite="lax"
     )
     return response
 
@@ -187,7 +196,6 @@ def resend_verification(
     
     return {"status": "error", "message": "Usuário não encontrado ou já verificado."}
 
-# --- ROTA CORRIGIDA AQUI (Era /verify-email, agora é /verify para combinar com o log) ---
 @router.get("/verify/{token}")
 def verify_email(request: Request, token: str, db: Session = Depends(get_db)):
     email = verify_email_token(token)

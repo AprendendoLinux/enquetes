@@ -1,27 +1,96 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Verifique seu E-mail</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-  <style>
-    body { background: #f0f2f5; font-family: 'Segoe UI', system-ui, sans-serif; height: 100vh; display: flex; align-items: center; justify-content: center; }
-    .card-msg { border: none; border-radius: 24px; box-shadow: 0 10px 40px rgba(0,0,0,0.08); max-width: 500px; width: 90%; }
-    .icon-circle { width: 80px; height: 80px; background: #e2e3e5; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem auto; }
-  </style>
-</head>
-<body>
-  <div class="card card-msg text-center p-5">
-    <div class="icon-circle text-dark">
-      <i class="bi bi-send-fill fs-1"></i>
+{% extends "base.html" %}
+
+{% block title %}Verifique seu E-mail{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* --- CSS PADRÃO (Mesma lógica do forgot_password) --- */
+    .reset-wrapper {
+        min-height: calc(100vh - 200px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding-bottom: 2rem;
+    }
+
+    .card-split { 
+        border: none; 
+        border-radius: 24px; 
+        box-shadow: 0 20px 60px rgba(0,0,0,0.1); 
+        overflow: hidden; 
+        max-width: 900px; 
+        width: 100%; 
+        margin: auto; 
+        background: #fff;
+    }
+
+    .brand-panel { 
+        background: linear-gradient(135deg, #212529 0%, #343a40 100%); 
+        color: white; 
+        padding: 3rem; 
+        display: flex; 
+        flex-direction: column; 
+        justify-content: center; 
+        align-items: center; 
+        text-align: center; 
+        min-height: 100%;
+    }
+
+    .content-panel { 
+        padding: 3rem; 
+        background: white; 
+        display: flex; 
+        flex-direction: column; 
+        justify-content: center; 
+        align-items: center;
+        text-align: center;
+    }
+
+    /* Ajuste Responsivo -20px */
+    @media (max-width: 767.98px) {
+        .brand-panel { padding: 2rem 1rem; }
+        .content-panel { padding: 2rem 1.5rem; }
+        .reset-wrapper { 
+            min-height: auto; 
+            display: block;
+            margin-top: -20px; 
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="reset-wrapper">
+  <div class="card card-split">
+    <div class="row g-0 h-100">
+      
+      <div class="col-md-5 brand-panel">
+        <i class="bi bi-send-check-fill display-1 mb-3 text-white-50"></i>
+        <h3 class="fw-bold mb-2">Enviado!</h3>
+        <p class="text-white-50 small mb-0">Verifique sua caixa de entrada.</p>
+      </div>
+
+      <div class="col-md-7 content-panel">
+        <div class="mb-4 text-success" style="font-size: 3rem;">
+            <i class="bi bi-envelope-check"></i>
+        </div>
+        
+        <h4 class="fw-bold text-dark mb-3">Link de Recuperação Enviado</h4>
+        
+        <p class="text-muted mb-4">
+            Você receberá um link para redefinir sua senha em instantes.
+        </p>
+
+        <div class="alert alert-light border small text-muted w-100 text-start">
+            <i class="bi bi-info-circle me-1"></i> <strong>Dica:</strong> Não encontrou? Verifique sua pasta de Spam ou Lixo Eletrônico.
+        </div>
+
+        <a href="/login" class="btn btn-dark rounded-pill px-4 mt-3 fw-bold">
+            Voltar ao Início
+        </a>
+      </div>
+
     </div>
-    <h3 class="fw-bold mb-3">Verifique seu E-mail</h3>
-    <p class="text-muted mb-4">
-      Se o e-mail <strong>{{ email }}</strong> estiver cadastrado, você receberá um link para redefinir sua senha em instantes.
-    </p>
-    <a href="/login" class="btn btn-outline-dark rounded-pill px-4">Voltar para Login</a>
   </div>
-</body>
-</html>
+</div>
+{% endblock %}

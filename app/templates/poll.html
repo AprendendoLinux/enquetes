@@ -28,14 +28,7 @@
   {% endif %}
 {% endblock %}
 
-{# --- BOTÃO EXTRA NA NAVBAR (Exclusivo desta página) --- #}
-{% block navbar_extra %}
-    {% if not is_expired and not already_voted %}
-    <a href="/polls/{{ poll.public_link }}/results" class="btn btn-outline-light btn-sm rounded-pill px-3 ms-2">
-        Ver Resultados
-    </a>
-    {% endif %}
-{% endblock %}
+{# --- BOTÃO EXTRA NA NAVBAR REMOVIDO DAQUI --- #}
 
 {# --- CONTEÚDO PRINCIPAL --- #}
 {% block content %}

@@ -160,24 +160,28 @@ def update_user_action(
     first_name: str = Form(...),
     last_name: str = Form(...),
     email: str = Form(...),
-    password: str = Form(None), # Senha é opcional
+    password: str = Form(None), 
+    confirm_password: str = Form(None), # Novo campo
     db: Session = Depends(get_db)
 ):
     admin = get_current_admin(request, db)
     if not admin: return RedirectResponse("/login", status_code=303)
     
-    # Verifica se o e-mail já existe em OUTRO usuário
+    # 1. Verifica e-mail duplicado
     existing_user = crud.get_user_by_email(db, email)
     if existing_user and existing_user.id != user_id:
-        return RedirectResponse("/admin?tab=users&error=Este e-mail já está em uso por outro usuário.", status_code=303)
+        return RedirectResponse("/admin?tab=users&error=Este e-mail já está em uso.", status_code=303)
 
     hashed_pw = None
+    # 2. Lógica de Senha com Confirmação
     if password and password.strip():
+        if password != confirm_password:
+            return RedirectResponse(f"/admin?tab=users&error=As senhas do usuário {first_name} não coincidem.", status_code=303)
         hashed_pw = get_password_hash(password)
 
     crud.update_user_details(db, user_id, first_name, last_name, email, hashed_pw)
     
-    return RedirectResponse("/admin?tab=users&success=Dados do usuário atualizados.", status_code=303)
+    return RedirectResponse("/admin?tab=users&success=Dados atualizados com sucesso.", status_code=303)
 
 @router.post("/users/{user_id}/delete")
 def delete_user(user_id: int, request: Request, db: Session = Depends(get_db)):

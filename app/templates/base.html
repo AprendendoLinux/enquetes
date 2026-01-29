@@ -46,14 +46,11 @@
     .btn-register-matte:hover { color: #fff; background-color: rgba(255,255,255,0.1); }
     .vr-matte { width: 1px; background-color: #495057; margin: 0 10px; height: 24px; align-self: center; }
 
-    /* --- RESPONSIVIDADE AVANÇADA (CORREÇÃO DOS BOTÕES) --- */
-    
-    /* 1. Comportamento Padrão (DESKTOP) */
-    .responsive-btn { width: auto; } /* Botões normais no PC */
-    .responsive-input { width: 160px !important; } /* Inputs pequenos no PC */
+    /* --- RESPONSIVIDADE AVANÇADA --- */
+    .responsive-btn { width: auto; } 
+    .responsive-input { width: 160px !important; } 
     .mobile-menu-container { display: flex; align-items: center; gap: 0.5rem; }
     
-    /* 2. Comportamento Mobile (Telas menores que 992px) */
     @media (max-width: 991.98px) {
         .navbar-collapse {
             background-color: #2b3035;
@@ -65,18 +62,17 @@
         
         .mobile-menu-container {
             flex-direction: column;
-            align-items: stretch !important; /* Estica tudo */
+            align-items: stretch !important;
             gap: 10px !important;
             width: 100%;
         }
 
-        .responsive-btn { width: 100% !important; text-align: center; } /* Botões 100% no Mobile */
-        .responsive-input { width: 100% !important; } /* Inputs 100% no Mobile */
+        .responsive-btn { width: 100% !important; text-align: center; }
+        .responsive-input { width: 100% !important; }
         
-        .vr-matte { display: none; } /* Esconde separador vertical */
+        .vr-matte { display: none; }
         .btn-register-matte { text-align: center; margin-top: 5px; display: block; width: 100%; }
         
-        /* Ajuste do Dropdown no Mobile */
         .dropdown-menu-dark { 
             position: static; 
             float: none;
@@ -158,7 +154,8 @@
                 </div>
 
             {% else %}
-                {% if request.url.path == '/' or request.url.path == '/login' or request.url.path == '/auth/token' or request.url.path == '/my_profile/verify_email' %}
+                {# --- LÓGICA CORRIGIDA: MOSTRA FORMULÁRIO EM TODAS AS PÁGINAS EXCETO REGISTER --- #}
+                {% if request.url.path != '/register' %}
                     <form action="/auth/token" method="post" class="d-flex align-items-center gap-2 mobile-menu-container">
                         <input type="email" name="username" class="form-control input-dark-theme responsive-input" placeholder="E-mail" required>
                         <input type="password" name="password" class="form-control input-dark-theme responsive-input" placeholder="Senha" required>
@@ -174,6 +171,7 @@
                 {% endif %}
             {% endif %}
             
+            {# --- BOTÃO EXTRA (EX: VER RESULTADOS) --- #}
             {% block navbar_extra %}{% endblock %}
         </div>
       </div>

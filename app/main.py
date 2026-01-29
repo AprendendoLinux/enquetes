@@ -333,6 +333,35 @@ async def verify_email_change(request: Request, token: str, db: Session = Depend
     response.delete_cookie("access_token")
     return response
 
+# --- NOVA ROTA: ALTERAR SENHA (CORREÇÃO DO ERRO 404) ---
+@app.post("/my_profile/change_password")
+async def change_password_profile(
+    current_password: str = Form(...),
+    new_password: str = Form(...),
+    confirm_password: str = Form(...),
+    db: Session = Depends(get_db),
+    access_token: str | None = Cookie(default=None)
+):
+    if not access_token: return RedirectResponse("/login", status_code=303)
+    email = verify_token(access_token)
+    if not email: return RedirectResponse("/login", status_code=303)
+    
+    user = crud.get_user_by_email(db, email)
+    
+    # 1. Verifica se a senha atual está correta
+    if not verify_password(current_password, user.hashed_password):
+        return RedirectResponse("/my_profile?error=A senha atual está incorreta.", status_code=303)
+    
+    # 2. Verifica se as novas senhas conferem
+    if new_password != confirm_password:
+        return RedirectResponse("/my_profile?error=A nova senha e a confirmação não coincidem.", status_code=303)
+        
+    # 3. Atualiza no banco
+    new_hash = get_password_hash(new_password)
+    crud.update_user_password(db, user.id, new_hash)
+    
+    return RedirectResponse("/my_profile?success=Sua senha foi alterada com sucesso.", status_code=303)
+
 @app.post("/my_profile/delete_account")
 async def delete_account(
     password: str = Form(...),

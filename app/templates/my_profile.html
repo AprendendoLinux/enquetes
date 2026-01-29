@@ -7,11 +7,11 @@
 
 {% block extra_css %}
 <style>
-    /* --- ESTRUTURA --- */
+    /* --- ESTRUTURA (Idêntica à Poll Card) --- */
     .card-profile {
         border: none;
-        border-radius: 20px;
-        box-shadow: 0 10px 40px rgba(0,0,0,0.08);
+        border-radius: 20px; /* Igual à enquete */
+        box-shadow: 0 10px 30px rgba(0,0,0,0.08); /* Sombra idêntica */
         background: #fff;
         overflow: hidden;
     }
@@ -19,8 +19,8 @@
     /* --- ÁREA DA FOTO --- */
     .avatar-wrapper {
         position: relative;
-        width: 130px; 
-        height: 130px;
+        width: 140px; /* Levemente maior para preencher melhor o card mais largo */
+        height: 140px;
         margin: 0 auto;
     }
 
@@ -29,7 +29,7 @@
         height: 100%;
         object-fit: cover;
         border-radius: 50%;
-        border: 4px solid #fff;
+        border: 5px solid #fff;
         box-shadow: 0 8px 20px rgba(0,0,0,0.15);
         background-color: #f8f9fa;
         transition: transform 0.3s ease;
@@ -39,12 +39,12 @@
         position: absolute;
         bottom: 5px;
         right: 5px;
-        width: 38px;
-        height: 38px;
+        width: 40px;
+        height: 40px;
         border-radius: 50%;
         background-color: #212529;
         color: #fff;
-        border: 2px solid #fff;
+        border: 3px solid #fff;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -59,13 +59,13 @@
         transform: scale(1.1);
     }
 
-    /* --- TIPOGRAFIA ESCURA (LEGIBILIDADE) --- */
+    /* --- TIPOGRAFIA --- */
     .section-title {
         font-size: 0.8rem;
-        font-weight: 800; /* Negrito Forte */
+        font-weight: 800;
         text-transform: uppercase;
         letter-spacing: 0.5px;
-        color: #212529; /* PRETO (quase) */
+        color: #212529;
         margin-bottom: 1rem;
         display: block;
         border-bottom: 2px solid #f1f3f5;
@@ -103,7 +103,7 @@
     .btn-action {
         font-weight: 600;
         font-size: 0.95rem;
-        padding: 0.7rem 1.5rem;
+        padding: 0.8rem 1.5rem; /* Botões um pouco mais altos */
     }
     
     .delete-zone-link {
@@ -115,12 +115,28 @@
         transition: opacity 0.2s;
     }
     .delete-zone-link:hover { opacity: 1; text-decoration: underline; }
+
+    /* Estilo do botão de expandir senha */
+    .btn-toggle-password {
+        background-color: #fff;
+        border: 1px solid #dee2e6;
+        color: #495057;
+        font-weight: 600;
+        border-radius: 12px;
+        padding: 0.8rem;
+        transition: all 0.2s;
+    }
+    .btn-toggle-password:hover, .btn-toggle-password[aria-expanded="true"] {
+        background-color: #f8f9fa;
+        border-color: #212529;
+        color: #212529;
+    }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="row justify-content-center">
-    <div class="col-lg-5 col-md-8">
+    <div class="col-lg-6 col-md-9">
         
         {% if success %}
         <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm rounded-4 py-3 px-4 mb-4 d-flex align-items-center" role="alert" style="background-color: #d1e7dd; color: #0f5132;">
@@ -140,7 +156,7 @@
         <div class="card card-profile mb-5">
             <div class="card-body p-4 p-md-5">
                 
-                <div class="text-center mb-5">
+                <div class="text-center mb-5 pt-2">
                     <div class="avatar-wrapper mb-3">
                         {% if user.avatar_path %}
                             <img src="{{ user.avatar_path }}?t={{ range(1, 10000) | random }}" class="avatar-img" id="currentAvatarDisplay">
@@ -156,7 +172,7 @@
                         <input type="file" id="avatarInput" accept="image/*" class="d-none">
                     </div>
                     
-                    <h4 class="fw-bold text-dark mb-1">{{ user.first_name }} {{ user.last_name }}</h4>
+                    <h3 class="fw-bold text-dark mb-1">{{ user.first_name }} {{ user.last_name }}</h3>
                     <span class="badge bg-light text-dark border border-secondary border-opacity-25 rounded-pill fw-normal px-3">
                         {{ user.email }}
                     </span>
@@ -182,7 +198,7 @@
                 </form>
 
                 <form action="/my_profile/request_email_change" method="post" class="mb-5">
-                    <span class="section-title">Trocar E-mail</span>
+                    <span class="section-title">Segurança (E-mail)</span>
                     <label class="form-label small fw-bold text-muted ms-1">Novo endereço</label>
                     <div class="input-group mb-2">
                         <input type="email" name="new_email" class="form-control form-control-clean border-end-0" placeholder="exemplo@email.com" required>
@@ -191,6 +207,43 @@
                         </button>
                     </div>
                 </form>
+
+                <div class="mb-5">
+                    <span class="section-title">Senha de Acesso</span>
+                    
+                    <button class="btn btn-toggle-password w-100 d-flex justify-content-between align-items-center" type="button" data-bs-toggle="collapse" data-bs-target="#collapsePassword" aria-expanded="false">
+                        <span><i class="bi bi-key-fill me-2"></i>Alterar minha senha</span>
+                        <i class="bi bi-chevron-down small"></i>
+                    </button>
+
+                    <div class="collapse mt-3" id="collapsePassword">
+                        <div class="card card-body bg-light border-0 rounded-4 p-4">
+                            <form action="/my_profile/change_password" method="post">
+                                <div class="mb-3">
+                                    <label class="form-label small fw-bold text-muted ms-1">Senha Atual</label>
+                                    <input type="password" name="current_password" class="form-control form-control-clean bg-white" required>
+                                </div>
+                                
+                                <div class="row g-3 mb-4">
+                                    <div class="col-6">
+                                        <label class="form-label small fw-bold text-muted ms-1">Nova Senha</label>
+                                        <input type="password" name="new_password" class="form-control form-control-clean bg-white" required>
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="form-label small fw-bold text-muted ms-1">Confirmar</label>
+                                        <input type="password" name="confirm_password" class="form-control form-control-clean bg-white" required>
+                                    </div>
+                                </div>
+
+                                <div class="d-grid">
+                                    <button type="submit" class="btn btn-dark rounded-pill fw-bold py-2">
+                                        Atualizar Senha
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
 
                 <div class="text-center pt-3 border-top border-light">
                     <button type="button" class="btn btn-link delete-zone-link p-0" data-bs-toggle="modal" data-bs-target="#deleteAccountModal">
@@ -209,7 +262,6 @@
             <div class="modal-body text-center p-4">
                 <h6 class="fw-bold mb-4">Nova Foto</h6>
                 <img id="imagePreview" src="" class="preview-modal-img" alt="Prévia">
-                
                 <div class="d-grid gap-2">
                     <button type="button" id="btnConfirmUpload" class="btn btn-dark rounded-pill fw-bold py-2 shadow-sm">Confirmar</button>
                     <button type="button" id="btnReplace" class="btn btn-link text-muted text-decoration-none btn-sm">Escolher outra</button>
@@ -228,9 +280,7 @@
                 </div>
                 <h5 class="fw-bold mb-2 text-danger">Excluir Conta?</h5>
                 <p class="small text-muted mb-4">Essa ação apagará todas as suas enquetes e não pode ser desfeita.</p>
-                
                 <input type="password" name="password" class="form-control form-control-clean text-center mb-3" placeholder="Digite sua senha" required>
-                
                 <div class="d-grid gap-2">
                     <button type="submit" class="btn btn-danger rounded-pill fw-bold shadow-sm">Sim, Excluir</button>
                     <button type="button" class="btn btn-light rounded-pill" data-bs-dismiss="modal">Cancelar</button>
@@ -249,10 +299,8 @@
     const modal = new bootstrap.Modal(modalElement);
     const btnConfirm = document.getElementById('btnConfirmUpload');
     const btnReplace = document.getElementById('btnReplace');
-    
     let selectedFile = null;
 
-    // 1. SELEÇÃO DE ARQUIVO
     avatarInput.addEventListener('change', function(e) {
         if (e.target.files && e.target.files.length > 0) {
             selectedFile = e.target.files[0];
@@ -265,40 +313,22 @@
         }
     });
 
-    // 2. TROCAR FOTO (REABRE SELETOR)
-    btnReplace.addEventListener('click', function() {
-        avatarInput.click();
-    });
+    btnReplace.addEventListener('click', function() { avatarInput.click(); });
 
-    // 3. ENVIAR FOTO
     btnConfirm.addEventListener('click', function() {
         if (!selectedFile) return;
-
         btnConfirm.disabled = true;
         btnConfirm.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Enviando...';
-
         const formData = new FormData();
         formData.append('avatar', selectedFile);
-
         fetch('/my_profile/upload_avatar', { method: 'POST', body: formData })
         .then(response => {
-            if (response.ok) {
-                window.location.reload(); 
-            } else {
-                alert('Erro ao enviar a imagem.');
-                btnConfirm.disabled = false;
-                btnConfirm.innerHTML = 'Confirmar';
-            }
+            if (response.ok) { window.location.reload(); } 
+            else { alert('Erro ao enviar a imagem.'); btnConfirm.disabled = false; btnConfirm.innerHTML = 'Confirmar'; }
         })
-        .catch(error => {
-            console.error(error);
-            alert('Erro de conexão.');
-            btnConfirm.disabled = false;
-            btnConfirm.innerHTML = 'Confirmar';
-        });
+        .catch(error => { console.error(error); alert('Erro de conexão.'); btnConfirm.disabled = false; btnConfirm.innerHTML = 'Confirmar'; });
     });
 
-    // LIMPEZA AO FECHAR
     modalElement.addEventListener('hidden.bs.modal', function () {
         if (!btnConfirm.disabled) avatarInput.value = ''; 
     });

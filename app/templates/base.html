@@ -16,10 +16,10 @@
   {% set clean_url = base_url.rstrip('/') %}
 
   <meta property="og:type" content="website">
-  <meta property="og:url" content="{% block og_url %}{{ clean_url }}/{% endblock %}\">
-  <meta property="og:title" content="{% block og_title %}Sistema de Enquetes Inteligentes{% endblock %}\">
-  <meta property="og:description" content="{% block og_description %}Crie, vote e descubra resultados em tempo real.{% endblock %}\">
-  <meta property="og:image" content="{% block og_image %}{{ clean_url }}/static/card.jpg{% endblock %}\">
+  <meta property="og:url" content="{% block og_url %}{{ clean_url }}/{% endblock %}">
+  <meta property="og:title" content="{% block og_title %}Sistema de Enquetes Inteligentes{% endblock %}">
+  <meta property="og:description" content="{% block og_description %}Crie, vote e descubra resultados em tempo real.{% endblock %}">
+  <meta property="og:image" content="{% block og_image %}{{ clean_url }}/static/card.jpg{% endblock %}">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta property="twitter:card" content="summary_large_image">
@@ -104,7 +104,8 @@
                                 <i class="bi bi-person-fill"></i>
                             {% endif %}
                         </div>
-                        <span class="fw-semibold d-none d-lg-inline">{{ current_user.first_name }}</span>
+                        {# --- AQUI ESTÁ A ALTERAÇÃO: Nome Completo --- #}
+                        <span class="fw-semibold d-none d-lg-inline">{{ current_user.first_name }} {{ current_user.last_name }}</span>
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end dropdown-menu-dark shadow">
                         <li><a class="dropdown-item" href="/dashboard"><i class="bi bi-speedometer2 me-2"></i>Dashboard</a></li>
@@ -116,7 +117,6 @@
                 </div>
 
             {% else %}
-                {# --- CORREÇÃO: ADICIONADO '/my_profile/verify_email' NA LISTA --- #}
                 {% if request.url.path == '/' or request.url.path == '/login' or request.url.path == '/auth/token' or request.url.path == '/my_profile/verify_email' %}
                     <form action="/auth/token" method="post" class="d-flex align-items-center gap-2">
                         <input type="email" name="username" class="form-control input-dark-theme" placeholder="E-mail" style="width: 160px;" required>

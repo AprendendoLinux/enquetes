@@ -16,10 +16,10 @@
   {% set clean_url = base_url.rstrip('/') %}
 
   <meta property="og:type" content="website">
-  <meta property="og:url" content="{% block og_url %}{{ clean_url }}/{% endblock %}">
-  <meta property="og:title" content="{% block og_title %}Sistema de Enquetes Inteligentes{% endblock %}">
-  <meta property="og:description" content="{% block og_description %}Crie, vote e descubra resultados em tempo real.{% endblock %}">
-  <meta property="og:image" content="{% block og_image %}{{ clean_url }}/static/card.jpg{% endblock %}">
+  <meta property="og:url" content="{% block og_url %}{{ clean_url }}/{% endblock %}\">
+  <meta property="og:title" content="{% block og_title %}Sistema de Enquetes Inteligentes{% endblock %}\">
+  <meta property="og:description" content="{% block og_description %}Crie, vote e descubra resultados em tempo real.{% endblock %}\">
+  <meta property="og:image" content="{% block og_image %}{{ clean_url }}/static/card.jpg{% endblock %}\">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta property="twitter:card" content="summary_large_image">
@@ -116,7 +116,8 @@
                 </div>
 
             {% else %}
-                {% if request.url.path == '/' or request.url.path == '/login' %}
+                {# --- CORREÇÃO: ADICIONADO '/my_profile/verify_email' NA LISTA --- #}
+                {% if request.url.path == '/' or request.url.path == '/login' or request.url.path == '/auth/token' or request.url.path == '/my_profile/verify_email' %}
                     <form action="/auth/token" method="post" class="d-flex align-items-center gap-2">
                         <input type="email" name="username" class="form-control input-dark-theme" placeholder="E-mail" style="width: 160px;" required>
                         <input type="password" name="password" class="form-control input-dark-theme" placeholder="Senha" style="width: 160px;" required>
@@ -139,7 +140,6 @@
   </nav>
 
   <div class="container" style="margin-top: 100px; margin-bottom: 60px;">
-      {# --- AQUI ESTÁ O SEGREDO: BLOCO FLASH MESSAGES --- #}
       {% block flash_messages %}
           {% if error %}
           <div class="alert alert-danger alert-dismissible fade show mb-4 shadow-sm border-0 rounded-3" role="alert">

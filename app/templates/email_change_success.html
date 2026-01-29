@@ -2,35 +2,71 @@
 
 {% block title %}E-mail Atualizado{% endblock %}
 
+{% block extra_css %}
+<style>
+    /* Estilo Consistente com o Perfil */
+    .card-message {
+        border: none;
+        border-radius: 20px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.08);
+        background: #fff;
+        overflow: hidden;
+    }
+    
+    .icon-wrapper {
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        background-color: #d1e7dd; /* Verde Suave */
+        color: #0f5132; /* Verde Escuro */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 2rem auto;
+        box-shadow: 0 4px 15px rgba(25, 135, 84, 0.15);
+    }
+
+    .btn-dark-elegant {
+        background-color: #212529;
+        border: none;
+        padding: 0.8rem 2rem;
+        font-weight: 600;
+        border-radius: 50px;
+        transition: all 0.2s;
+    }
+    .btn-dark-elegant:hover {
+        background-color: #000;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="row justify-content-center align-items-center" style="min-height: 60vh;">
     <div class="col-md-6 col-lg-5 text-center">
         
-        <div class="card border-0 shadow-lg rounded-5 overflow-hidden bg-white">
+        <div class="card card-message">
             <div class="card-body p-5">
                 
-                <div class="mb-4">
-                    <div class="d-inline-flex align-items-center justify-content-center bg-success bg-opacity-10 text-success rounded-circle shadow-sm" style="width: 80px; height: 80px;">
-                        <i class="bi bi-check-lg display-4"></i>
-                    </div>
+                <div class="icon-wrapper">
+                    <i class="bi bi-check-lg display-3"></i>
                 </div>
                 
-                <h2 class="fw-bold text-dark mb-3">Tudo Certo!</h2>
+                <h2 class="fw-bold text-dark mb-3">Tudo Pronto!</h2>
                 
-                <p class="text-muted mb-4 fs-5" style="line-height: 1.6;">
-                    Seu endereço de e-mail foi atualizado com sucesso.<br>
-                    <span class="fs-6 opacity-75">Por segurança, realize o login novamente.</span>
+                <p class="text-muted mb-5 fs-5">
+                    Seu endereço de e-mail foi validado e atualizado com sucesso em nosso sistema.
                 </p>
 
-                <div class="d-grid gap-3">
-                    <a href="/login" class="btn btn-dark rounded-pill fw-bold py-3 shadow-sm btn-lg">
-                        Ir para Login <i class="bi bi-arrow-right ms-2"></i>
-                    </a>
+                <p class="small text-secondary mb-4">
+                    Para sua segurança, sua sessão foi encerrada.<br>
+                    Utilize o formulário acima para entrar com seu novo e-mail.
+                </p>
+
+                <div class="d-none d-lg-block text-muted opacity-50 animation-bounce">
+                    <i class="bi bi-arrow-up display-6"></i>
                 </div>
-            </div>
-            
-            <div class="card-footer bg-light border-0 py-3 text-muted small opacity-50">
-                Sistema de Enquetes
             </div>
         </div>
 

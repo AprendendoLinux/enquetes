@@ -86,10 +86,11 @@ app.include_router(auth.router, prefix="/auth", tags=["auth"])
 app.include_router(poll.router, prefix="/polls", tags=["polls"])
 app.include_router(admin.router, prefix="/admin", tags=["admin"]) 
 
-# --- ROTA RAIZ ---
+# --- ROTA RAIZ (HOME/LOGIN) ---
 @app.get("/", response_class=HTMLResponse)
 async def root(request: Request, db: Session = Depends(get_db), access_token: str | None = Cookie(default=None)):
     user = None
+    # Tenta recuperar o usuário se houver token, para mostrar a navbar logada
     if access_token:
         email = verify_token(access_token)
         if email:
@@ -103,7 +104,7 @@ async def root(request: Request, db: Session = Depends(get_db), access_token: st
     return templates.TemplateResponse("login.html", {
         "request": request, 
         "polls": recent_polls, 
-        "user": user 
+        "user": user  # Passa o usuário (pode ser None)
     })
 
 @app.get("/login", response_class=HTMLResponse)
@@ -128,11 +129,11 @@ async def dashboard(request: Request, db: Session = Depends(get_db), access_toke
     polls = db.query(models.Poll).filter(models.Poll.creator_id == user.id).all()
     
     for p in polls:
-        # Busca todos os votos dessa enquete
+        # Busca contagem de votos
         votes = db.query(models.Vote).filter(models.Vote.poll_id == p.id).all()
         p.vote_count = len(votes)
         
-        # Busca opções e calcula porcentagens para o modal de resumo
+        # Prepara resumo para o modal
         options = db.query(models.Option).filter(models.Option.poll_id == p.id).all()
         p.results_summary = []
         
@@ -148,15 +149,14 @@ async def dashboard(request: Request, db: Session = Depends(get_db), access_toke
                 "percent": percent
             })
         
-        # Ordena as opções por número de votos (maior para menor) para o gráfico
+        # Ordena por mais votados
         p.results_summary.sort(key=lambda x: x['votes'], reverse=True)
 
     return templates.TemplateResponse("dashboard.html", {"request": request, "user": user, "polls": polls})
 
-# --- CRIAR ENQUETE (ATUALIZADO PARA PASSAR USER) ---
+# --- CRIAR ENQUETE ---
 @app.get("/create_poll", response_class=HTMLResponse)
 async def create_poll_page(request: Request, db: Session = Depends(get_db), access_token: str | None = Cookie(default=None)):
-    # 1. Verifica autenticação
     if not access_token:
         return RedirectResponse("/login", status_code=303)
     
@@ -164,12 +164,10 @@ async def create_poll_page(request: Request, db: Session = Depends(get_db), acce
     if not email:
         return RedirectResponse("/login", status_code=303)
     
-    # 2. Busca usuário (Necessário para a Navbar funcionar)
     user = crud.get_user_by_email(db, email)
     if not user:
         return RedirectResponse("/login", status_code=303)
 
-    # 3. Retorna template com o user
     return templates.TemplateResponse("create_poll.html", {"request": request, "user": user})
 
 @app.post("/create_poll")
@@ -196,7 +194,7 @@ async def create_poll_action(
     if len(cleaned_options) < 2:
         return templates.TemplateResponse("create_poll.html", {
             "request": request, 
-            "user": user, # Passa o user de volta para não quebrar o layout
+            "user": user, # Importante passar o usuário de volta
             "error": "A enquete precisa de pelo menos duas opções válidas."
         })
 

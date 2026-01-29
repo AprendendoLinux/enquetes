@@ -17,6 +17,19 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/token")
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
 
+# --- FUNÇÃO AUXILIAR PARA NAVBAR ---
+def get_optional_user(request: Request, db: Session):
+    """
+    Recupera o usuário logado se existir, para preencher a Navbar.
+    Não redireciona se falhar (retorna None).
+    """
+    token = request.cookies.get("access_token")
+    if token:
+        email = verify_token(token)
+        if email:
+            return crud.get_user_by_email(db, email)
+    return None
+
 def get_client_ip(request: Request) -> str:
     x_forwarded_for = request.headers.get("x-forwarded-for")
     if x_forwarded_for:
@@ -28,19 +41,22 @@ def get_client_ip(request: Request) -> str:
 
 @router.get("/{public_link}", response_class=HTMLResponse)
 def view_poll(public_link: str, request: Request, voted: str | None = None, db: Session = Depends(get_db)):
+    # 1. Pega usuário opcional (para o base.html)
+    user = get_optional_user(request, db)
+    
     poll = crud.get_poll_by_link(db, public_link)
     
     if not poll:
-        return templates.TemplateResponse("404.html", {"request": request}, status_code=404)
+        return templates.TemplateResponse("404.html", {"request": request, "user": user}, status_code=404)
 
-    # 1. Lógica de Expiração
+    # 2. Lógica de Expiração
     is_expired = False
     if poll.archived:
         is_expired = True
     elif poll.deadline and datetime.now() > poll.deadline:
         is_expired = True
 
-    # 2. Lógica de Voto Já Realizado
+    # 3. Lógica de Voto Já Realizado (Cookie + IP)
     already_voted = False
     cookie_name = f"voted_{poll.public_link}"
     
@@ -60,8 +76,9 @@ def view_poll(public_link: str, request: Request, voted: str | None = None, db: 
     return templates.TemplateResponse("poll.html", {
         "request": request, 
         "poll": poll, 
+        "user": user,  # Passando o usuário para o template
         "options": options,
-        "is_archived": poll.archived, # Passa o status real
+        "is_archived": poll.archived,
         "is_expired": (poll.deadline and datetime.now() > poll.deadline),
         "already_voted": already_voted
     })
@@ -74,12 +91,16 @@ def vote_poll(
     option: int = Form(None),       
     options: list[int] = Form(None) 
 ):
+    user = get_optional_user(request, db) # Usuário para navbar
     poll = crud.get_poll_by_link(db, public_link)
+    
     if not poll: raise HTTPException(404, "Enquete não encontrada")
     
+    # Validações de prazo
     if poll.archived or (poll.deadline and datetime.now() > poll.deadline):
         return RedirectResponse(f"/polls/{public_link}", status_code=303)
 
+    # Validações de voto repetido
     cookie_name = f"voted_{public_link}"
     if request.cookies.get(cookie_name) == "true":
         return RedirectResponse(f"/polls/{public_link}?voted=true", status_code=303)
@@ -93,6 +114,7 @@ def vote_poll(
         if ip_votes >= MAX_VOTES_PER_IP:
             return RedirectResponse(f"/polls/{public_link}?voted=true", status_code=303)
 
+    # Processamento das opções
     selected = []
     if poll.multiple_choice:
         if options: selected = options
@@ -104,6 +126,7 @@ def vote_poll(
         return templates.TemplateResponse("poll.html", {
             "request": request, 
             "poll": poll, 
+            "user": user, # Passa user em caso de erro
             "options": options_db,
             "is_archived": poll.archived,
             "is_expired": (poll.deadline and datetime.now() > poll.deadline),
@@ -126,9 +149,11 @@ def vote_poll(
 
 @router.get("/{public_link}/results")
 def view_results(public_link: str, request: Request, db: Session = Depends(get_db)):
+    user = get_optional_user(request, db) # Usuário para navbar
     poll = crud.get_poll_by_link(db, public_link)
+    
     if not poll:
-        return templates.TemplateResponse("404.html", {"request": request}, status_code=404)
+        return templates.TemplateResponse("404.html", {"request": request, "user": user}, status_code=404)
 
     options = db.query(models.Option).filter(models.Option.poll_id == poll.id).all()
     votes = db.query(models.Vote).filter(models.Vote.poll_id == poll.id).all()
@@ -152,11 +177,12 @@ def view_results(public_link: str, request: Request, db: Session = Depends(get_d
     return templates.TemplateResponse("results.html", {
         "request": request,
         "poll": poll,
+        "user": user, # Passa user para o template
         "results": results_data,
         "total_votes": total_votes
     })
 
-# --- ROTAS DE GERENCIAMENTO (USUÁRIO) ---
+# --- ROTAS DE GERENCIAMENTO (Requer Login) ---
 
 @router.post("/{poll_id}/update_deadline")
 def update_deadline(
@@ -185,7 +211,6 @@ def update_deadline(
     crud.update_poll_deadline(db, poll.id, deadline_dt)
     return RedirectResponse("/dashboard", status_code=303)
 
-# ROTA: ALTERAR VISIBILIDADE (NOVO)
 @router.post("/{poll_id}/toggle_visibility")
 def toggle_visibility_user(
     poll_id: int, 
@@ -202,12 +227,10 @@ def toggle_visibility_user(
     if not poll or poll.creator_id != user.id:
         raise HTTPException(403, "Não autorizado")
 
-    # Inverte o status atual
     poll.is_public = not poll.is_public
     db.commit()
     return RedirectResponse("/dashboard", status_code=303)
 
-# ROTA: ARQUIVAR
 @router.post("/{poll_id}/toggle_archive")
 def toggle_archive_user(
     poll_id: int, 

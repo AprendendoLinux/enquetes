@@ -115,6 +115,27 @@ def send_reset_password_email(to_email: str, token: str, base_url: str):
     msg.add_alternative(html_content, subtype='html')
     _send_email(msg, to_email)
 
+# --- NOVA FUNÇÃO PARA TROCA DE E-MAIL ---
+def send_change_email_request(to_email: str, token: str, base_url: str):
+    clean_base_url = base_url.rstrip("/")
+    link = f"{clean_base_url}/my_profile/verify_email?token={token}"
+    
+    msg = EmailMessage()
+    msg['Subject'] = "Confirme seu novo e-mail"
+    msg['From'] = SMTP_FROM
+    msg['To'] = to_email
+    
+    html_content = _get_html_template(
+        base_url=clean_base_url,
+        title="Troca de E-mail Solicitada",
+        body_content="Você solicitou a alteração do seu e-mail de acesso. Clique no botão abaixo para validar este novo endereço.",
+        action_url=link,
+        action_text="Confirmar E-mail"
+    )
+    msg.set_content(f"Link: {link}")
+    msg.add_alternative(html_content, subtype='html')
+    _send_email(msg, to_email)
+
 def _send_email(msg, to_email):
     logger.info("="*40)
     logger.info(f" INICIANDO PROCESSO DE ENVIO: {to_email}")
@@ -124,24 +145,20 @@ def _send_email(msg, to_email):
         # 1. CONEXÃO
         logger.info("[1/6] Conectando ao servidor SMTP...")
         server = smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=20)
-        # server.set_debuglevel(1) # Comentado para limpar logs, descomente se precisar debugar protocolo
+        # server.set_debuglevel(1) # Pode descomentar para ver o log bruto do SMTP se der erro
         
         # 2. EHLO INICIAL
         logger.info("[2/6] Enviando EHLO...")
         server.ehlo()
 
         # 3. STARTTLS (CRIPTOGRAFIA)
-        # Verifica se é porta 587 ou se o servidor oferece STARTTLS
         if SMTP_PORT == 587 or server.has_extn("STARTTLS"):
             logger.info("[3/6] Iniciando STARTTLS...")
-            
-            # Contexto SSL que ignora erros de certificado (autoassinado)
             context = ssl.create_default_context()
             context.check_hostname = False
             context.verify_mode = ssl.CERT_NONE
-            
             server.starttls(context=context)
-            logger.info("[3/6] STARTTLS concluído (Certificado Ignorado). Reenviando EHLO...")
+            logger.info("[3/6] STARTTLS concluído. Reenviando EHLO...")
             server.ehlo()
         else:
             logger.info("[3/6] Pulo do STARTTLS (Porta não é 587 e servidor não pediu).")

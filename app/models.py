@@ -13,6 +13,12 @@ class User(Base):
     is_admin = Column(Boolean, default=False)
     is_blocked = Column(Boolean, default=False)
     
+    # --- NOVOS CAMPOS PARA O PERFIL ---
+    avatar_path = Column(String(255), nullable=True)
+    pending_email = Column(String(255), nullable=True)
+    email_verification_token = Column(String(100), nullable=True)
+    # ----------------------------------
+    
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 class Poll(Base):
@@ -22,10 +28,7 @@ class Poll(Base):
     description = Column(Text, nullable=True)
     multiple_choice = Column(Boolean, default=False)
     check_ip = Column(Boolean, default=True)
-    
-    # --- NOVO CAMPO ---
     is_public = Column(Boolean, default=True) 
-    # ------------------
     
     creator_id = Column(Integer, ForeignKey("users.id"))
     public_link = Column(String(36), unique=True, index=True)

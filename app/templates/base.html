@@ -16,16 +16,12 @@
   {% set clean_url = base_url.rstrip('/') %}
 
   <meta property="og:type" content="website">
-  
   <meta property="og:url" content="{% block og_url %}{{ clean_url }}/{% endblock %}">
-  
   <meta property="og:title" content="{% block og_title %}Sistema de Enquetes Inteligentes{% endblock %}">
   <meta property="og:description" content="{% block og_description %}Crie, vote e descubra resultados em tempo real.{% endblock %}">
-  
   <meta property="og:image" content="{% block og_image %}{{ clean_url }}/static/card.jpg{% endblock %}">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
-  
   <meta property="twitter:card" content="summary_large_image">
 
   <style>
@@ -34,12 +30,7 @@
     body { background-color: #f0f2f5; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
     
     /* NAVBAR MATTE */
-    .navbar-matte {
-        background-color: #212529;
-        padding: 0.6rem 0; 
-        border-bottom: 1px solid #343a40;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    }
+    .navbar-matte { background-color: #212529; padding: 0.6rem 0; border-bottom: 1px solid #343a40; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
     .navbar-brand { font-weight: 700; font-size: 1.5rem; color: #fff !important; letter-spacing: 0.5px; }
     
     .dropdown-menu-dark { background-color: #343a40; border-color: #495057; }
@@ -106,13 +97,18 @@
 
                 <div class="dropdown ms-2">
                     <a class="btn btn-outline-light border-0 dropdown-toggle d-flex align-items-center gap-2" href="#" role="button" data-bs-toggle="dropdown">
-                        <div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
-                            <i class="bi bi-person-fill"></i>
+                        <div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center overflow-hidden" style="width: 32px; height: 32px;">
+                            {% if current_user.avatar_path %}
+                                <img src="{{ current_user.avatar_path }}" alt="Avatar" style="width: 100%; height: 100%; object-fit: cover;">
+                            {% else %}
+                                <i class="bi bi-person-fill"></i>
+                            {% endif %}
                         </div>
                         <span class="fw-semibold d-none d-lg-inline">{{ current_user.first_name }}</span>
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end dropdown-menu-dark shadow">
                         <li><a class="dropdown-item" href="/dashboard"><i class="bi bi-speedometer2 me-2"></i>Dashboard</a></li>
+                        <li><a class="dropdown-item" href="/my_profile"><i class="bi bi-person-circle me-2"></i>Meu Perfil</a></li>
                         <li><a class="dropdown-item" href="/auth/change-password"><i class="bi bi-key me-2"></i>Alterar Senha</a></li>
                         <li><hr class="dropdown-divider"></li>
                         <li><a class="dropdown-item text-danger" href="/logout"><i class="bi bi-box-arrow-right me-2"></i>Sair</a></li>
@@ -143,15 +139,28 @@
   </nav>
 
   <div class="container" style="margin-top: 100px; margin-bottom: 60px;">
-      {% if error %}
-      <div class="alert alert-danger alert-dismissible fade show mb-4 shadow-sm border-0 rounded-3" role="alert">
-        <div class="d-flex align-items-center">
-            <i class="bi bi-exclamation-circle-fill me-2 fs-5"></i>
-            <div>{{ error }}</div>
-        </div>
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-      </div>
-      {% endif %}
+      {# --- AQUI ESTÁ O SEGREDO: BLOCO FLASH MESSAGES --- #}
+      {% block flash_messages %}
+          {% if error %}
+          <div class="alert alert-danger alert-dismissible fade show mb-4 shadow-sm border-0 rounded-3" role="alert">
+            <div class="d-flex align-items-center">
+                <i class="bi bi-exclamation-circle-fill me-2 fs-5"></i>
+                <div>{{ error }}</div>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
+          {% endif %}
+          
+          {% if success %}
+          <div class="alert alert-success alert-dismissible fade show mb-4 shadow-sm border-0 rounded-3" role="alert">
+            <div class="d-flex align-items-center">
+                <i class="bi bi-check-circle-fill me-2 fs-5"></i>
+                <div>{{ success }}</div>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
+          {% endif %}
+      {% endblock %}
 
       {% block content %}{% endblock %}
   </div>

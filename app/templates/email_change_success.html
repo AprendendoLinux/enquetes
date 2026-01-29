@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}E-mail Atualizado{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center align-items-center" style="min-height: 60vh;">
+    <div class="col-md-6 col-lg-5 text-center">
+        
+        <div class="card border-0 shadow-lg rounded-5 overflow-hidden bg-white">
+            <div class="card-body p-5">
+                
+                <div class="mb-4">
+                    <div class="d-inline-flex align-items-center justify-content-center bg-success bg-opacity-10 text-success rounded-circle shadow-sm" style="width: 80px; height: 80px;">
+                        <i class="bi bi-check-lg display-4"></i>
+                    </div>
+                </div>
+                
+                <h2 class="fw-bold text-dark mb-3">Tudo Certo!</h2>
+                
+                <p class="text-muted mb-4 fs-5" style="line-height: 1.6;">
+                    Seu endereço de e-mail foi atualizado com sucesso.<br>
+                    <span class="fs-6 opacity-75">Por segurança, realize o login novamente.</span>
+                </p>
+
+                <div class="d-grid gap-3">
+                    <a href="/login" class="btn btn-dark rounded-pill fw-bold py-3 shadow-sm btn-lg">
+                        Ir para Login <i class="bi bi-arrow-right ms-2"></i>
+                    </a>
+                </div>
+            </div>
+            
+            <div class="card-footer bg-light border-0 py-3 text-muted small opacity-50">
+                Sistema de Enquetes
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,306 @@
+{% extends "base.html" %}
+
+{% block title %}Meu Perfil{% endblock %}
+
+{# --- ESCONDE A MENSAGEM DUPLICADA DO BASE.HTML --- #}
+{% block flash_messages %}{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* --- ESTRUTURA --- */
+    .card-profile {
+        border: none;
+        border-radius: 20px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.08);
+        background: #fff;
+        overflow: hidden;
+    }
+
+    /* --- ÁREA DA FOTO --- */
+    .avatar-wrapper {
+        position: relative;
+        width: 130px; 
+        height: 130px;
+        margin: 0 auto;
+    }
+
+    .avatar-img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border-radius: 50%;
+        border: 4px solid #fff;
+        box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+        background-color: #f8f9fa;
+        transition: transform 0.3s ease;
+    }
+
+    .btn-edit-avatar {
+        position: absolute;
+        bottom: 5px;
+        right: 5px;
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        background-color: #212529;
+        color: #fff;
+        border: 2px solid #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        transition: all 0.2s;
+        z-index: 5;
+    }
+
+    .btn-edit-avatar:hover {
+        background-color: #000;
+        transform: scale(1.1);
+    }
+
+    /* --- TIPOGRAFIA ESCURA (LEGIBILIDADE) --- */
+    .section-title {
+        font-size: 0.8rem;
+        font-weight: 800; /* Negrito Forte */
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: #212529; /* PRETO (quase) */
+        margin-bottom: 1rem;
+        display: block;
+        border-bottom: 2px solid #f1f3f5;
+        padding-bottom: 5px;
+    }
+
+    /* --- INPUTS --- */
+    .form-control-clean {
+        background-color: #f8f9fa;
+        border: 1px solid #e9ecef;
+        border-radius: 12px;
+        padding: 0.8rem 1rem;
+        font-size: 0.95rem;
+        color: #212529;
+        transition: all 0.2s;
+    }
+
+    .form-control-clean:focus {
+        background-color: #fff;
+        border-color: #212529;
+        box-shadow: 0 0 0 4px rgba(33, 37, 41, 0.05);
+    }
+
+    /* --- MODAL DE PRÉVIA --- */
+    .preview-modal-img {
+        width: 180px;
+        height: 180px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 5px solid #fff;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+        margin-bottom: 1.5rem;
+    }
+
+    .btn-action {
+        font-weight: 600;
+        font-size: 0.95rem;
+        padding: 0.7rem 1.5rem;
+    }
+    
+    .delete-zone-link {
+        font-size: 0.85rem;
+        color: #dc3545;
+        text-decoration: none;
+        font-weight: 600;
+        opacity: 0.8;
+        transition: opacity 0.2s;
+    }
+    .delete-zone-link:hover { opacity: 1; text-decoration: underline; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-5 col-md-8">
+        
+        {% if success %}
+        <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm rounded-4 py-3 px-4 mb-4 d-flex align-items-center" role="alert" style="background-color: #d1e7dd; color: #0f5132;">
+            <i class="bi bi-check-circle-fill me-3 fs-5"></i>
+            <span class="fw-semibold">{{ success }}</span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endif %}
+        {% if error %}
+        <div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm rounded-4 py-3 px-4 mb-4 d-flex align-items-center" role="alert" style="background-color: #f8d7da; color: #842029;">
+            <i class="bi bi-exclamation-triangle-fill me-3 fs-5"></i>
+            <span class="fw-semibold">{{ error }}</span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endif %}
+
+        <div class="card card-profile mb-5">
+            <div class="card-body p-4 p-md-5">
+                
+                <div class="text-center mb-5">
+                    <div class="avatar-wrapper mb-3">
+                        {% if user.avatar_path %}
+                            <img src="{{ user.avatar_path }}?t={{ range(1, 10000) | random }}" class="avatar-img" id="currentAvatarDisplay">
+                        {% else %}
+                            <div class="avatar-img d-flex align-items-center justify-content-center text-secondary fs-1 bg-light">
+                                <i class="bi bi-person-fill"></i>
+                            </div>
+                        {% endif %}
+
+                        <label for="avatarInput" class="btn-edit-avatar" title="Alterar Foto">
+                            <i class="bi bi-camera-fill"></i>
+                        </label>
+                        <input type="file" id="avatarInput" accept="image/*" class="d-none">
+                    </div>
+                    
+                    <h4 class="fw-bold text-dark mb-1">{{ user.first_name }} {{ user.last_name }}</h4>
+                    <span class="badge bg-light text-dark border border-secondary border-opacity-25 rounded-pill fw-normal px-3">
+                        {{ user.email }}
+                    </span>
+                </div>
+
+                <form action="/my_profile/update_info" method="post" class="mb-5">
+                    <span class="section-title">Dados Pessoais</span>
+                    <div class="row g-3 mb-4">
+                        <div class="col-6">
+                            <label class="form-label small fw-bold text-muted ms-1">Nome</label>
+                            <input type="text" name="first_name" class="form-control form-control-clean" value="{{ user.first_name }}" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-bold text-muted ms-1">Sobrenome</label>
+                            <input type="text" name="last_name" class="form-control form-control-clean" value="{{ user.last_name }}" required>
+                        </div>
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-dark rounded-pill btn-action shadow-sm">
+                            Salvar Alterações
+                        </button>
+                    </div>
+                </form>
+
+                <form action="/my_profile/request_email_change" method="post" class="mb-5">
+                    <span class="section-title">Trocar E-mail</span>
+                    <label class="form-label small fw-bold text-muted ms-1">Novo endereço</label>
+                    <div class="input-group mb-2">
+                        <input type="email" name="new_email" class="form-control form-control-clean border-end-0" placeholder="exemplo@email.com" required>
+                        <button type="submit" class="btn btn-outline-secondary border-start-0 ps-3 pe-4 rounded-end-3" style="border-color: #e9ecef; background: #f8f9fa;">
+                            <i class="bi bi-send-fill text-dark"></i>
+                        </button>
+                    </div>
+                </form>
+
+                <div class="text-center pt-3 border-top border-light">
+                    <button type="button" class="btn btn-link delete-zone-link p-0" data-bs-toggle="modal" data-bs-target="#deleteAccountModal">
+                        Excluir minha conta
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="previewModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content rounded-4 border-0 shadow-lg">
+            <div class="modal-body text-center p-4">
+                <h6 class="fw-bold mb-4">Nova Foto</h6>
+                <img id="imagePreview" src="" class="preview-modal-img" alt="Prévia">
+                
+                <div class="d-grid gap-2">
+                    <button type="button" id="btnConfirmUpload" class="btn btn-dark rounded-pill fw-bold py-2 shadow-sm">Confirmar</button>
+                    <button type="button" id="btnReplace" class="btn btn-link text-muted text-decoration-none btn-sm">Escolher outra</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="deleteAccountModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <form action="/my_profile/delete_account" method="post" class="modal-content rounded-4 shadow border-0">
+            <div class="modal-body text-center p-4">
+                <div class="mb-3 text-danger bg-danger bg-opacity-10 d-inline-flex p-3 rounded-circle">
+                    <i class="bi bi-trash3-fill fs-4"></i>
+                </div>
+                <h5 class="fw-bold mb-2 text-danger">Excluir Conta?</h5>
+                <p class="small text-muted mb-4">Essa ação apagará todas as suas enquetes e não pode ser desfeita.</p>
+                
+                <input type="password" name="password" class="form-control form-control-clean text-center mb-3" placeholder="Digite sua senha" required>
+                
+                <div class="d-grid gap-2">
+                    <button type="submit" class="btn btn-danger rounded-pill fw-bold shadow-sm">Sim, Excluir</button>
+                    <button type="button" class="btn btn-light rounded-pill" data-bs-dismiss="modal">Cancelar</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const avatarInput = document.getElementById('avatarInput');
+    const imagePreview = document.getElementById('imagePreview');
+    const modalElement = document.getElementById('previewModal');
+    const modal = new bootstrap.Modal(modalElement);
+    const btnConfirm = document.getElementById('btnConfirmUpload');
+    const btnReplace = document.getElementById('btnReplace');
+    
+    let selectedFile = null;
+
+    // 1. SELEÇÃO DE ARQUIVO
+    avatarInput.addEventListener('change', function(e) {
+        if (e.target.files && e.target.files.length > 0) {
+            selectedFile = e.target.files[0];
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                imagePreview.src = event.target.result;
+                modal.show();
+            };
+            reader.readAsDataURL(selectedFile);
+        }
+    });
+
+    // 2. TROCAR FOTO (REABRE SELETOR)
+    btnReplace.addEventListener('click', function() {
+        avatarInput.click();
+    });
+
+    // 3. ENVIAR FOTO
+    btnConfirm.addEventListener('click', function() {
+        if (!selectedFile) return;
+
+        btnConfirm.disabled = true;
+        btnConfirm.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Enviando...';
+
+        const formData = new FormData();
+        formData.append('avatar', selectedFile);
+
+        fetch('/my_profile/upload_avatar', { method: 'POST', body: formData })
+        .then(response => {
+            if (response.ok) {
+                window.location.reload(); 
+            } else {
+                alert('Erro ao enviar a imagem.');
+                btnConfirm.disabled = false;
+                btnConfirm.innerHTML = 'Confirmar';
+            }
+        })
+        .catch(error => {
+            console.error(error);
+            alert('Erro de conexão.');
+            btnConfirm.disabled = false;
+            btnConfirm.innerHTML = 'Confirmar';
+        });
+    });
+
+    // LIMPEZA AO FECHAR
+    modalElement.addEventListener('hidden.bs.modal', function () {
+        if (!btnConfirm.disabled) avatarInput.value = ''; 
+    });
+</script>
+{% endblock %}

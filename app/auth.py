@@ -72,7 +72,7 @@ def login_for_access_token(
 ):
     user = crud.get_user_by_email(db, form_data.username)
     
-    # 1. Verifica credenciais (Usuário existe e senha bate)
+    # 1. Verifica credenciais
     if not user or not verify_password(form_data.password, user.hashed_password):
         return RedirectResponse(url="/?error=Credenciais inválidas", status_code=303)
     
@@ -80,18 +80,16 @@ def login_for_access_token(
     if user.is_blocked:
          return RedirectResponse(url="/?error=Sua conta foi bloqueada pelo administrador.", status_code=303)
 
-    # 3. VERIFICAÇÃO DE E-MAIL (ATIVADO AGORA)
+    # 3. VERIFICAÇÃO DE E-MAIL (COM LINK DE REENVIO)
     if not user.is_verified:
-         # Se for admin padrão (primeiro acesso), permite passar sem verificar
          if user.email != "admin@admin":
-            return RedirectResponse(url="/?error=Por favor, verifique seu e-mail antes de entrar.", status_code=303)
+            # Mudança: Enviamos um código 'unverified' e o email para o HTML criar o link
+            return RedirectResponse(url=f"/?error=unverified&email={user.email}", status_code=303)
 
     # Sucesso: Gera Token
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    
     access_token = create_access_token(data={"sub": user.email}, expires_delta=access_token_expires)
     
-    # Redirecionamento
     if user.email == "admin@admin":
         response = RedirectResponse(url="/admin/setup", status_code=303)
     else:
@@ -177,8 +175,6 @@ def reset_password_action(
     return templates.TemplateResponse("reset_success.html", {"request": request})
 
 
-# --- REENVIO DE VERIFICAÇÃO ---
-
 @router.post("/resend-verification")
 def resend_verification(
     request: Request,
@@ -191,9 +187,11 @@ def resend_verification(
         verify_token_str = create_verification_token(email)
         base_url = str(request.base_url)
         background_tasks.add_task(send_verification_email, email, verify_token_str, base_url)
-        return {"status": "success", "message": "E-mail reenviado com sucesso."}
+        # Mudança: Redireciona para a home com mensagem de sucesso
+        return RedirectResponse("/?success=E-mail de verificação reenviado! Verifique sua caixa de entrada.", status_code=303)
     
-    return {"status": "error", "message": "Usuário não encontrado ou já verificado."}
+    # Se não achou ou já verificou, manda para home também (segurança por obscuridade)
+    return RedirectResponse("/?error=Não foi possível reenviar. Verifique se o e-mail está correto.", status_code=303)
 
 @router.get("/verify/{token}")
 def verify_email(request: Request, token: str, db: Session = Depends(get_db)):

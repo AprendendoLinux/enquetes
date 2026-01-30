@@ -1,3 +1,4 @@
+import asyncio
 import time
 import logging
 from contextlib import asynccontextmanager
@@ -56,6 +57,25 @@ def create_default_admin():
     except Exception as e:
         logger.error(f"Erro ao criar admin padrão: {e}")
 
+# --- TAREFA EM SEGUNDO PLANO (LOOP INFINITO) ---
+async def periodic_cleanup_task():
+    """
+    Roda infinitamente a cada 1 hora para limpar usuários expirados.
+    """
+    while True:
+        try:
+            db = SessionLocal()
+            # Chama a função que criamos no crud.py
+            count = crud.delete_expired_unverified_users(db)
+            if count > 0:
+                logger.info(f"🧹 Limpeza Automática: {count} usuários expirados foram removidos.")
+            db.close()
+        except Exception as e:
+            logger.error(f"Erro na tarefa de limpeza automática: {e}")
+        
+        # Espera 1 hora (3600 segundos) antes de verificar de novo
+        await asyncio.sleep(3600)
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # --- LÓGICA DE RETRY (AGUARDAR BANCO) ---
@@ -78,6 +98,12 @@ async def lifespan(app: FastAPI):
     try:
         models.Base.metadata.create_all(bind=engine)
         create_default_admin()
+        
+        # --- INICIA A TAREFA DE LIMPEZA EM SEGUNDO PLANO ---
+        # Isso dispara o loop sem travar a inicialização do servidor
+        asyncio.create_task(periodic_cleanup_task())
+        # ---------------------------------------------------
+        
     except Exception as e:
         logger.error(f"Erro durante a inicialização das tabelas: {e}")
 

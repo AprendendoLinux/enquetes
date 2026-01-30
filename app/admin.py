@@ -220,17 +220,29 @@ def update_user_action(
     return RedirectResponse("/admin?tab=users&success=Usuário atualizado com sucesso.", status_code=303)
 
 @router.post("/users/{user_id}/delete")
-def delete_user(user_id: int, request: Request, db: Session = Depends(get_db)):
+def delete_user(
+    user_id: int, 
+    request: Request, 
+    delete_data: bool = Form(False), # <--- Novo campo (padrão é falso/não marcado)
+    db: Session = Depends(get_db)
+):
     admin = get_current_admin(request, db)
     if not admin: return RedirectResponse("/login", status_code=303)
     if admin.id == user_id: return RedirectResponse("/admin?error=Você não pode deletar a si mesmo.", status_code=303)
+    
     user = db.query(models.User).filter(models.User.id == user_id).first()
     if user:
-        # Deletar enquetes do usuário primeiro
-        user_polls = db.query(models.Poll).filter(models.Poll.creator_id == user_id).all()
-        for p in user_polls: crud.delete_poll(db, p.id)
+        if delete_data:
+            # Se marcou a caixa: APAGA TUDO (Lógica antiga)
+            user_polls = db.query(models.Poll).filter(models.Poll.creator_id == user_id).all()
+            for p in user_polls: crud.delete_poll(db, p.id)
+        else:
+            # Se NÃO marcou: Mantém os dados (Desvincula/Orphan)
+            db.query(models.Poll).filter(models.Poll.creator_id == user_id).update({"creator_id": None})
+
         db.delete(user)
         db.commit()
+        
     return RedirectResponse("/admin?tab=users", status_code=303)
 
 @router.post("/polls/{poll_id}/toggle_visibility")

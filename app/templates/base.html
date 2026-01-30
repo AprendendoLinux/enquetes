@@ -25,9 +25,30 @@
   <meta property="twitter:card" content="summary_large_image">
 
 <style>
-    /* PADRONIZAÇÃO */
-    html { overflow-y: scroll; }
-    body { background-color: #f0f2f5; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
+    /* 1. Mantém a barra de rolagem SEMPRE visível (seu requisito) */
+    html { 
+        overflow-y: scroll; 
+    }
+    
+    body { 
+        background-color: #f0f2f5; 
+        font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; 
+    }
+
+    /* --- CORREÇÃO DO PULO DO MODAL --- */
+    /* Como a barra de rolagem já está lá (forçada no html), 
+       dizemos ao Bootstrap para NÃO adicionar padding extra no corpo */
+    body.modal-open {
+        padding-right: 0 !important;
+        /* Opcional: Se quiser bloquear a rolagem do fundo mantendo a barra visual: */
+        overflow-y: hidden; 
+    }
+
+    /* Dizemos ao Bootstrap para NÃO empurrar a Navbar fixa */
+    body.modal-open .fixed-top,
+    body.modal-open .navbar-matte {
+        padding-right: 0 !important;
+    }
     
     /* NAVBAR MATTE */
     .navbar-matte { background-color: #212529; padding: 0.6rem 0; border-bottom: 1px solid #343a40; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }

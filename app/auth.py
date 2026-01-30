@@ -42,7 +42,12 @@ def register(
 ):
     db_user = crud.get_user_by_email(db, email)
     if db_user:
-        return templates.TemplateResponse("email_exists.html", {"request": request}, status_code=400)
+        # ALTERAÇÃO AQUI: Passamos o email e o status de verificação para o template
+        return templates.TemplateResponse("email_exists.html", {
+            "request": request, 
+            "email": email,
+            "is_verified": db_user.is_verified
+        }, status_code=400)
     
     hashed_password = get_password_hash(password)
     

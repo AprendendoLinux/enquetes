@@ -156,6 +156,7 @@ def register_page(request: Request):
     return templates.TemplateResponse("register.html", {"request": request})
 
 # --- DASHBOARD ---
+# --- DASHBOARD (SUBSTITUIR ESTA FUNÇÃO INTEIRA) ---
 @app.get("/dashboard", response_class=HTMLResponse)
 def dashboard(
     request: Request, 
@@ -172,10 +173,34 @@ def dashboard(
     user = crud.get_user_by_email(db, email)
     if not user: return RedirectResponse("/", status_code=303)
     
-    # O Admin agora pode ver este dashboard também (trava removida)
-
+    # Busca as enquetes do usuário
     user_polls = db.query(models.Poll).filter(models.Poll.creator_id == user.id).order_by(models.Poll.id.desc()).all()
     
+    # --- LÓGICA NOVA: Calcular estatísticas para os Modais de Resultados ---
+    for p in user_polls:
+        # 1. Conta o total de votos
+        votes = db.query(models.Vote).filter(models.Vote.poll_id == p.id).all()
+        p.vote_count = len(votes)
+        
+        # 2. Calcula porcentagem por opção
+        options = db.query(models.Option).filter(models.Option.poll_id == p.id).all()
+        summary = []
+        for opt in options:
+            opt_votes = sum(1 for v in votes if v.option_id == opt.id)
+            percent = 0
+            if p.vote_count > 0:
+                percent = round((opt_votes / p.vote_count) * 100, 1)
+            
+            summary.append({
+                "text": opt.text,
+                "votes": opt_votes,
+                "percent": percent
+            })
+        
+        # Anexa o resumo na enquete para o template ler
+        p.results_summary = summary
+    # ---------------------------------------------------------------------
+
     return templates.TemplateResponse("dashboard.html", {
         "request": request, 
         "user": user, 

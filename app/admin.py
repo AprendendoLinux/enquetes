@@ -161,56 +161,60 @@ def update_user_action(
     first_name: str = Form(...),
     last_name: str = Form(...),
     email: str = Form(...),
+    is_admin: bool = Form(False),         # <--- RECEBE O VALOR DO SWITCH
     password: str = Form(None),
     confirm_password: str = Form(None),
-    avatar: UploadFile = File(None),      # Novo campo de arquivo
-    remove_avatar: str = Form("false"),   # Flag de remoção (vem como string do form)
+    avatar: UploadFile = File(None),
+    remove_avatar: str = Form("false"),
     db: Session = Depends(get_db)
 ):
     admin = get_current_admin(request, db)
     if not admin: return RedirectResponse("/login", status_code=303)
     
-    # 1. Verifica e-mail
+    # 1. Proteção: Admin não pode remover seu próprio acesso
+    if user_id == admin.id and not is_admin:
+         return RedirectResponse("/admin?tab=users&error=Você não pode remover seus próprios privilégios de administrador.", status_code=303)
+
+    # 2. Verifica e-mail duplicado
     existing_user = crud.get_user_by_email(db, email)
     if existing_user and existing_user.id != user_id:
         return RedirectResponse("/admin?tab=users&error=Este e-mail já está em uso.", status_code=303)
 
-    # 2. Senha
+    # 3. Senha
     hashed_pw = None
     if password and password.strip():
         if password != confirm_password:
             return RedirectResponse(f"/admin?tab=users&error=As senhas não coincidem.", status_code=303)
         hashed_pw = get_password_hash(password)
 
-    # 3. Processamento de Avatar
+    # 4. Processamento de Avatar
     user = db.query(models.User).filter(models.User.id == user_id).first()
     new_avatar_path = None
     should_remove = (remove_avatar == "true")
 
-    # Se enviou arquivo novo
     if avatar and avatar.filename:
-        # Deleta antigo se existir
         if user.avatar_path and os.path.exists(user.avatar_path.lstrip("/")):
             try: os.remove(user.avatar_path.lstrip("/"))
             except: pass
         
-        # Salva novo
         safe_filename = f"avatar_{uuid.uuid4()}_{avatar.filename}"
         file_location = os.path.join("static/uploads", safe_filename)
         with open(file_location, "wb") as buffer:
             shutil.copyfileobj(avatar.file, buffer)
         new_avatar_path = f"/static/uploads/{safe_filename}"
     
-    # Se pediu para remover (e não enviou um novo)
     elif should_remove:
         if user.avatar_path and os.path.exists(user.avatar_path.lstrip("/")):
             try: os.remove(user.avatar_path.lstrip("/"))
             except: pass
 
+    # Atualiza tudo, incluindo is_admin
     crud.update_user_details(
-        db, user_id, first_name, last_name, email, hashed_pw, 
+        db, user_id, first_name, last_name, email, 
+        hashed_password=hashed_pw, 
         avatar_path=new_avatar_path, 
-        remove_avatar=should_remove
+        remove_avatar=should_remove,
+        is_admin=is_admin # <--- PASSA PARA O BANCO
     )
     
     return RedirectResponse("/admin?tab=users&success=Usuário atualizado com sucesso.", status_code=303)

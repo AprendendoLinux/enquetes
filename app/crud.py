@@ -92,13 +92,15 @@ def update_user_details(
     email: str, 
     hashed_password: str = None, 
     avatar_path: str = None, 
-    remove_avatar: bool = False
+    remove_avatar: bool = False,
+    is_admin: bool = False  # <--- NOVO PARÂMETRO
 ):
     user = db.query(models.User).filter(models.User.id == user_id).first()
     if user:
         user.first_name = first_name
         user.last_name = last_name
         user.email = email
+        user.is_admin = is_admin  # <--- ATUALIZA O STATUS
         
         if hashed_password:
             user.hashed_password = hashed_password

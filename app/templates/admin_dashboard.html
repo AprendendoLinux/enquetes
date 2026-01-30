@@ -300,6 +300,14 @@
                         </div>
                     </div>
 
+                    <div class="form-check form-switch mb-3 ps-5">
+                        <input class="form-check-input" type="checkbox" role="switch" id="adminSwitch{{ u.id }}" name="is_admin" value="true" {% if u.is_admin %}checked{% endif %}>
+                        <label class="form-check-label fw-bold text-dark" for="adminSwitch{{ u.id }}">
+                            Acesso de Administrador
+                        </label>
+                        <div class="form-text small" style="margin-top: -2px;">Habilita acesso total ao painel de gestão.</div>
+                    </div>
+
                     <hr class="border-secondary opacity-10 my-4">
 
                     <div class="bg-light p-3 rounded-3 border border-light">

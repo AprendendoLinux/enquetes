@@ -24,7 +24,7 @@
   <meta property="og:image:height" content="630">
   <meta property="twitter:card" content="summary_large_image">
 
- <style>
+<style>
     /* PADRONIZAÇÃO */
     html { overflow-y: scroll; }
     body { background-color: #f0f2f5; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
@@ -36,14 +36,14 @@
     .dropdown-menu-dark { background-color: #343a40; border-color: #495057; }
     .dropdown-item:hover { background-color: #495057; }
     
-    /* INPUT DARK THEME (Com ajuste de padding para o ícone) */
+    /* INPUT DARK THEME */
     .input-dark-theme { 
         background-color: #2c3237; 
         border: 1px solid #495057; 
         color: #e9ecef; 
         font-size: 0.85rem; 
         border-radius: 6px; 
-        padding-right: 35px !important; /* Espaço para o olho não cobrir o texto */
+        padding-right: 35px !important; /* Espaço para o olho */
     }
     .input-dark-theme::placeholder { color: #adb5bd; }
     .input-dark-theme:focus { background-color: #343a40; border-color: #6c757d; color: #fff; box-shadow: none; }
@@ -59,30 +59,34 @@
     .responsive-input { width: 160px !important; } 
     .mobile-menu-container { display: flex; align-items: center; gap: 0.5rem; }
     
-    /* --- CSS DO LINK ESQUECI A SENHA --- */
+    /* --- CSS GERAL DO WRAPPER DE SENHA --- */
+    .password-wrapper { 
+        position: relative !important; 
+        /* Removemos o display: flex aqui para que a altura do wrapper seja EXATAMENTE a do input */
+    }
+
+    /* --- LINK ESQUECI A SENHA (BASE) --- */
     .forgot-pass-link {
         font-size: 0.65rem;
         color: rgba(255,255,255,0.5);
         text-decoration: none;
         transition: color 0.2s;
         line-height: 1;
+        /* Configuração padrão Absoluta para Desktop e Mobile */
+        position: absolute; 
+        top: 100%;
+        right: 5px; 
+        margin-top: 4px;
+        white-space: nowrap;
     }
     .forgot-pass-link:hover { color: #fff; }
 
-    /* --- CORREÇÃO IMPORTANTE: WRAPPER GLOBAL --- */
-    /* Isso segura o ícone dentro do input em qualquer tamanho de tela */
-    .password-wrapper { 
-        position: relative !important; 
-        display: flex; 
-        align-items: center;
-    }
-
-    /* --- CSS DO OLHO MÁGICO NA NAVBAR --- */
+    /* --- OLHO MÁGICO NA NAVBAR --- */
     .btn-eye-nav {
         position: absolute;
         right: 10px;
         top: 50%;
-        transform: translateY(-50%);
+        transform: translateY(-50%); /* Centraliza perfeitamente no input */
         background: transparent;
         border: none;
         color: #adb5bd;
@@ -95,18 +99,8 @@
     }
     .btn-eye-nav:hover { color: #fff; }
 
-    /* Desktop: Link flutuante abaixo do input */
-    @media (min-width: 992px) {
-        .forgot-pass-link {
-            position: absolute;
-            top: 100%;
-            right: 5px; 
-            margin-top: 4px;
-            white-space: nowrap;
-        }
-    }
     
-    /* Mobile: Ajustes de layout */
+    /* --- MOBILE: AJUSTES ESPECÍFICOS --- */
     @media (max-width: 991.98px) {
         .navbar-collapse {
             background-color: #2b3035;
@@ -120,18 +114,24 @@
             flex-direction: column;
             align-items: stretch !important;
             gap: 10px !important;
-            width: 100%;
         }
 
         .responsive-btn { width: 100% !important; text-align: center; }
         .responsive-input { width: 100% !important; }
         .password-wrapper { width: 100% !important; }
         
+        /* CORREÇÃO PARA MOBILE */
+        .password-wrapper {
+            margin-bottom: 25px; /* Adiciona espaço extra embaixo para o link caber */
+        }
+
         .forgot-pass-link {
-            display: block;
-            text-align: right;
+            /* Garante que o link fique embaixo e à direita no mobile também */
+            position: absolute;
+            top: 100%;
+            right: 0;
             margin-top: 5px;
-            margin-bottom: 5px;
+            text-align: right;
         }
         
         .vr-matte { display: none; }

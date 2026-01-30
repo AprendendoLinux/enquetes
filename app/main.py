@@ -1,6 +1,8 @@
 import time
 import logging
 from contextlib import asynccontextmanager
+from starlette.exceptions import HTTPException as StarletteHTTPException
+from database import engine, Base, get_db, SessionLocal
 from fastapi import FastAPI, Request, Depends, Cookie, Form, File, UploadFile, BackgroundTasks
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
@@ -91,6 +93,25 @@ templates = Jinja2Templates(directory="templates")
 app.include_router(auth.router, prefix="/auth", tags=["auth"])
 app.include_router(poll.router, prefix="/polls", tags=["polls"])
 app.include_router(admin.router, prefix="/admin", tags=["admin"])
+
+# --- MANIPULADOR DE ERRO 404 ---
+@app.exception_handler(404)
+async def custom_404_handler(request: Request, exc: StarletteHTTPException):
+    # Tenta recuperar o usuário logado para não quebrar a navbar
+    user = None
+    try:
+        token = request.cookies.get("access_token")
+        if token:
+            email = verify_token(token)
+            if email:
+                # Cria uma sessão rápida apenas para buscar o usuário
+                db = SessionLocal() 
+                user = crud.get_user_by_email(db, email)
+                db.close()
+    except:
+        pass 
+        
+    return templates.TemplateResponse("404.html", {"request": request, "user": user}, status_code=404)
 
 # --- CORREÇÃO 1: Rota /login redireciona para Home ---
 @app.get("/login")

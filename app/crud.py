@@ -1,4 +1,5 @@
 from sqlalchemy.orm import Session
+from datetime import datetime, timedelta
 import uuid
 import models, schemas
 
@@ -114,3 +115,25 @@ def update_user_details(
         db.commit()
         db.refresh(user)
     return user
+
+def delete_expired_unverified_users(db: Session):
+    """
+    Remove usuários que se cadastraram há mais de 48h
+    e ainda não verificaram o e-mail.
+    """
+    # Define o limite (agora menos 48 horas)
+    deadline = datetime.now() - timedelta(hours=48)
+    
+    # Busca usuários não verificados e antigos
+    expired_users = db.query(models.User).filter(
+        models.User.is_verified == False,
+        models.User.created_at < deadline
+    ).all()
+    
+    count = 0
+    for u in expired_users:
+        db.delete(u)
+        count += 1
+        
+    db.commit()
+    return count

@@ -80,17 +80,16 @@ def login_for_access_token(
     if user.is_blocked:
          return RedirectResponse(url="/?error=Sua conta foi bloqueada pelo administrador.", status_code=303)
 
-    # 3. Verifica e-mail confirmado (Opcional, se seu sistema exigir)
-    # if not user.is_verified:
-    #      return RedirectResponse(url="/?error=Por favor, verifique seu e-mail antes de entrar.", status_code=303)
+    # 3. VERIFICAÇÃO DE E-MAIL (ATIVADO AGORA)
+    if not user.is_verified:
+         # Se for admin padrão (primeiro acesso), permite passar sem verificar
+         if user.email != "admin@admin":
+            return RedirectResponse(url="/?error=Por favor, verifique seu e-mail antes de entrar.", status_code=303)
 
     # Sucesso: Gera Token
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     
-    # OBS: Se seu auth_utils.create_access_token aceita expires_delta, use assim:
-    # access_token = create_access_token(data={"sub": user.email}, expires_delta=access_token_expires)
-    # Caso contrário (versão antiga), use apenas data:
-    access_token = create_access_token(data={"sub": user.email})
+    access_token = create_access_token(data={"sub": user.email}, expires_delta=access_token_expires)
     
     # Redirecionamento
     if user.email == "admin@admin":

@@ -414,8 +414,13 @@ def delete_account(
     if not email: return RedirectResponse("/login", status_code=303)
     user = crud.get_user_by_email(db, email)
 
+    if user.is_admin:
+        return RedirectResponse("/my_profile?error=Administradores não podem excluir a própria conta.", status_code=303)
+
     if not verify_password(password, user.hashed_password):
         return RedirectResponse("/my_profile?error=Senha incorreta. Conta não excluída.", status_code=303)
+
+    poll_ids = db.query(models.Poll.id).filter(models.Poll.creator_id == user.id).all()
 
     poll_ids = db.query(models.Poll.id).filter(models.Poll.creator_id == user.id).all()
     poll_ids_list = [p[0] for p in poll_ids]

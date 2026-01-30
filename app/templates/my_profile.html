@@ -290,9 +290,15 @@
                 </div>
 
                 <div class="text-center pt-3 border-top border-light">
-                    <button type="button" class="btn btn-link delete-zone-link p-0" data-bs-toggle="modal" data-bs-target="#deleteAccountModal">
-                        Excluir minha conta
-                    </button>
+                    {% if not user.is_admin %}
+                        <button type="button" class="btn btn-link delete-zone-link p-0" data-bs-toggle="modal" data-bs-target="#deleteAccountModal">
+                            Excluir minha conta
+                        </button>
+                    {% else %}
+                        <p class="small text-muted mb-0">
+                            <i class="bi bi-shield-lock-fill me-1"></i> Administradores não podem se auto-excluir.
+                        </p>
+                    {% endif %}
                 </div>
 
             </div>

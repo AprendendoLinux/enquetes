@@ -62,7 +62,7 @@ def admin_dashboard(
     for p in polls:
         p.vote_count = db.query(models.Vote).filter(models.Vote.poll_id == p.id).count()
         creator = db.query(models.User).filter(models.User.id == p.creator_id).first()
-        p.creator_email = creator.email if creator else "Usuário Removido"
+        p.creator_email = creator.email if creator else "Conta excluída"
 
     return templates.TemplateResponse("admin_dashboard.html", {
         "request": request, 
@@ -72,8 +72,6 @@ def admin_dashboard(
         "q_users": q_users,
         "q_polls": q_polls
     })
-
-# --- ROTA DE CONFIGURAÇÃO (SETUP) CORRIGIDA ---
 
 @router.get("/setup", response_class=HTMLResponse)
 def admin_setup_page(request: Request, db: Session = Depends(get_db)):

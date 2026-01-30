@@ -414,25 +414,22 @@ def delete_account(
     if not email: return RedirectResponse("/login", status_code=303)
     user = crud.get_user_by_email(db, email)
 
+    # 1. Proteção: Admin não pode se excluir
     if user.is_admin:
         return RedirectResponse("/my_profile?error=Administradores não podem excluir a própria conta.", status_code=303)
 
+    # 2. Verifica Senha
     if not verify_password(password, user.hashed_password):
         return RedirectResponse("/my_profile?error=Senha incorreta. Conta não excluída.", status_code=303)
 
-    poll_ids = db.query(models.Poll.id).filter(models.Poll.creator_id == user.id).all()
+    # 3. Lógica Nova: DESVINCULAR enquetes em vez de apagar
+    # Isso atualiza todas as enquetes desse usuário para ficarem sem dono (creator_id = None)
+    db.query(models.Poll).filter(models.Poll.creator_id == user.id).update({"creator_id": None})
 
-    poll_ids = db.query(models.Poll.id).filter(models.Poll.creator_id == user.id).all()
-    poll_ids_list = [p[0] for p in poll_ids]
-    
-    if poll_ids_list:
-        db.query(models.Vote).filter(models.Vote.poll_id.in_(poll_ids_list)).delete(synchronize_session=False)
-        db.query(models.Option).filter(models.Option.poll_id.in_(poll_ids_list)).delete(synchronize_session=False)
-        db.query(models.Poll).filter(models.Poll.id.in_(poll_ids_list)).delete(synchronize_session=False)
-
+    # 4. Apaga o Usuário
     db.delete(user)
     db.commit()
 
-    response = RedirectResponse("/?success=Sua conta foi excluída com sucesso.", status_code=303)
+    response = RedirectResponse("/?success=Sua conta foi excluída, mas suas enquetes públicas permanecerão ativas.", status_code=303)
     response.delete_cookie("access_token")
     return response

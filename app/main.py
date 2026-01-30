@@ -335,7 +335,7 @@ def request_email_change(
     request: Request,
     background_tasks: BackgroundTasks,
     new_email: str = Form(...),
-    current_password: str = Form(...),
+    # current_password removido
     db: Session = Depends(get_db),
     access_token: str | None = Cookie(default=None)
 ):
@@ -344,8 +344,7 @@ def request_email_change(
     if not email: return RedirectResponse("/login", status_code=303)
     user = crud.get_user_by_email(db, email)
 
-    if not verify_password(current_password, user.hashed_password):
-        return RedirectResponse("/my_profile?error=Senha incorreta.", status_code=303)
+    # Verificação de senha removida
     
     if crud.get_user_by_email(db, new_email):
         return RedirectResponse("/my_profile?error=Este e-mail já está em uso.", status_code=303)

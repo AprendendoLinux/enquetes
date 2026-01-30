@@ -115,10 +115,10 @@ def send_reset_password_email(to_email: str, token: str, base_url: str):
     msg.add_alternative(html_content, subtype='html')
     _send_email(msg, to_email)
 
-# --- NOVA FUNÇÃO PARA TROCA DE E-MAIL ---
 def send_change_email_request(to_email: str, token: str, base_url: str):
     clean_base_url = base_url.rstrip("/")
-    link = f"{clean_base_url}/my_profile/verify_email?token={token}"
+    # CORREÇÃO: Link agora aponta para a rota correta do main.py
+    link = f"{clean_base_url}/my_profile/confirm_email_change/{token}"
     
     msg = EmailMessage()
     msg['Subject'] = "Confirme seu novo e-mail"

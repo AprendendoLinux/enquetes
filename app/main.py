@@ -149,6 +149,7 @@ def login_redirect():
 def read_root(
     request: Request, 
     db: Session = Depends(get_db),
+    q: str = None, # Parâmetro de busca
     error: str = None,
     success: str = None
 ):
@@ -158,22 +159,53 @@ def read_root(
         email = verify_token(token)
         if email:
             user = crud.get_user_by_email(db, email)
-            # --- AJUSTE AQUI ---
-            # Removi o RedirectResponse("/dashboard").
-            # Agora, se o usuário existe, ele simplesmente carrega a página (user=user).
-            # O base.html cuidará de mostrar o menu logado.
 
-    recent_polls = crud.get_recent_public_polls(db, limit=12)
+    # 1. Busca TODAS as enquetes públicas
+    all_polls = crud.get_all_public_polls(db)
     
-    for p in recent_polls:
+    # 2. Calcula contagem de votos para todas (necessário para ordenar por popularidade)
+    # Nota: Em sistemas muito grandes, isso deve ser feito via SQL Count/Group By.
+    # Para o seu escopo atual, Python resolve bem.
+    for p in all_polls:
         p.vote_count = db.query(models.Vote).filter(models.Vote.poll_id == p.id).count()
+
+    total_count = len(all_polls)
+    
+    # Variáveis para o template
+    polls_latest = []
+    polls_popular = []
+    polls_oldest = []
+    search_results = []
+    is_search = False
+
+    if q:
+        # SE TIVER BUSCA: Filtra pelo título e mostra grid único
+        is_search = True
+        search_term = q.lower()
+        search_results = [p for p in all_polls if search_term in p.title.lower()]
+    else:
+        # SE NÃO TIVER BUSCA: Prepara os 3 Carrosséis
+        # a) Últimas: Ordena por ID descrescente
+        polls_latest = sorted(all_polls, key=lambda x: x.id, reverse=True)
+        
+        # b) Mais Votadas: Ordena por vote_count descrescente
+        polls_popular = sorted(all_polls, key=lambda x: x.vote_count, reverse=True)
+        
+        # c) Mais Antigas: Ordena por ID crescente
+        polls_oldest = sorted(all_polls, key=lambda x: x.id, reverse=False)
 
     return templates.TemplateResponse("login.html", {
         "request": request, 
-        "polls": recent_polls,
-        "user": user, # Passa o usuário para a navbar
+        "user": user,
         "error": error,
-        "success": success
+        "success": success,
+        "total_count": total_count,
+        "q": q,
+        "is_search": is_search,
+        "search_results": search_results,
+        "polls_latest": polls_latest,
+        "polls_popular": polls_popular,
+        "polls_oldest": polls_oldest
     })
 
 # --- ROTA DE REGISTRO ---

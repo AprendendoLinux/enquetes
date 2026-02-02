@@ -77,6 +77,16 @@ def update_user_password(db: Session, user_id: int, new_hashed_password: str):
     if user:
         user.hashed_password = new_hashed_password
         db.commit()
+        
+# No final do arquivo ou junto com as funções de leitura
+def get_all_public_polls(db: Session):
+    """
+    Busca TODAS as enquetes públicas não arquivadas para processamento no front.
+    """
+    return db.query(models.Poll).filter(
+        models.Poll.is_public == True,
+        models.Poll.archived == False
+    ).all()
 
 # --- FUNCIONALIDADES DE VERIFICAÇÃO DE E-MAIL ---
 

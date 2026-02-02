@@ -19,18 +19,19 @@ def create_user(db: Session, user: schemas.UserCreate, hashed_password: str):
     return db_user
 
 def create_poll(db: Session, poll: schemas.PollCreate, creator_id: int):
-    # Cria a enquete salvando o novo campo is_public
     db_poll = models.Poll(
         title=poll.title,
         description=poll.description,
         multiple_choice=poll.multiple_choice,
         check_ip=poll.check_ip,
-        is_public=poll.is_public,  # <--- NOVO CAMPO
+        is_public=poll.is_public,
+        anonymous=poll.anonymous,  # <--- SALVANDO O CAMPO
         creator_id=creator_id,
         public_link=str(uuid.uuid4()),
         deadline=poll.deadline,
         image_path=poll.image_path
     )
+    # ... resto da função igual
     db.add(db_poll)
     db.commit()
     db.refresh(db_poll)

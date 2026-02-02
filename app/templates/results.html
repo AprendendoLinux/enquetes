@@ -2,6 +2,34 @@
 
 {% block title %}Resultados - {{ poll.title }}{% endblock %}
 
+
+{# --- CONFIGURAÇÃO DO CARD SOCIAL (WHATSAPP) --- #}
+{% block og_title %}{{ poll.title }}{% endblock %}
+{% block og_description %}{% if poll.description %}{{ poll.description[:160] }}{% else %}Vote agora e veja o resultado em tempo real!{% endif %}{% endblock %}
+
+{% block og_url %}
+  {% set base = request.base_url | string %}
+  {% if 'localhost' not in base and '127.0.0.1' not in base %}{% set base = base.replace('http://', 'https://') %}{% endif %}
+  {{ base.rstrip('/') }}/polls/{{ poll.public_link }}
+{% endblock %}
+
+{% block og_image %}
+  {% set base = request.base_url | string %}
+  {% if 'localhost' not in base and '127.0.0.1' not in base %}{% set base = base.replace('http://', 'https://') %}{% endif %}
+  {% set clean_base = base.rstrip('/') %}
+
+  {% if poll.image_path %}
+    {% if not poll.image_path.startswith('/') %}
+        {{ clean_base }}/{{ poll.image_path }}
+    {% else %}
+        {{ clean_base }}{{ poll.image_path }}
+    {% endif %}
+  {% else %}
+    {{ clean_base }}/static/card.jpg
+  {% endif %}
+{% endblock %}
+
+
 {% block content %}
     <div class="row justify-content-center">
       
@@ -25,6 +53,61 @@
                 
                 <div class="text-center mb-4">
                     <h3 class="fw-bold text-dark mb-2">{{ poll.title }}</h3>
+
+{% if not poll.anonymous and poll.creator %}
+<div class="text-center mb-4">
+    <div class="d-inline-block text-start bg-light rounded-pill pe-4 ps-1 py-1 border border-light">
+        <div class="d-flex align-items-center">
+            <a href="#" class="text-decoration-none d-flex align-items-center me-2" data-bs-toggle="modal" data-bs-target="#pollAuthorModal">
+                {% if poll.creator.avatar_path %}
+                    <img src="{{ poll.creator.avatar_path }}" class="rounded-circle me-2" style="width: 32px; height: 32px; object-fit: cover;">
+                {% else %}
+                    <div class="rounded-circle bg-secondary bg-opacity-10 d-flex align-items-center justify-content-center me-2" style="width: 32px; height: 32px;">
+                        <i class="bi bi-person-fill text-muted small"></i>
+                    </div>
+                {% endif %}
+                <div>
+                    <div class="lh-1">
+                        <span class="text-muted small me-1">Por</span>
+                        <span class="fw-bold text-dark small">{{ poll.creator.first_name }}</span>
+                    </div>
+                    <div class="text-muted" style="font-size: 0.65rem; margin-top: 1px;">
+                        Membro desde {{ poll.creator.created_at.strftime('%d/%m/%Y') }}
+                    </div>
+                </div>
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="pollAuthorModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content rounded-4 shadow border-0">
+            <div class="modal-body text-center p-4">
+                <div class="mb-3 d-inline-block">
+                    {% if poll.creator.avatar_path %}
+                        <img src="{{ poll.creator.avatar_path }}" class="rounded-circle shadow-sm" style="width: 90px; height: 90px; object-fit: cover; border: 4px solid #fff;">
+                    {% else %}
+                        <div class="rounded-circle bg-light d-flex align-items-center justify-content-center shadow-sm" style="width: 90px; height: 90px; border: 4px solid #fff;">
+                            <i class="bi bi-person-fill fs-1 text-secondary"></i>
+                        </div>
+                    {% endif %}
+                </div>
+                <h5 class="fw-bold text-dark mb-1">
+                    {{ poll.creator.first_name }} {{ poll.creator.last_name }}
+                </h5>
+                <p class="text-muted small mb-0">
+                    <i class="bi bi-calendar-check me-1"></i> Membro desde {{ poll.creator.created_at.strftime('%d/%m/%Y') }}
+                </p>
+            </div>
+            <div class="modal-footer border-0 pt-0 justify-content-center pb-4">
+                <button type="button" class="btn btn-outline-dark rounded-pill px-4 btn-sm" data-bs-dismiss="modal">Fechar</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
                     <span class="badge bg-light text-dark border rounded-pill px-3 py-2">
                         <i class="bi bi-people-fill me-1"></i> {{ total_votes }} votos computados
                     </span>

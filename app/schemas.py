@@ -20,10 +20,10 @@ class PollCreate(BaseModel):
     description: Optional[str] = None
     multiple_choice: bool = False
     check_ip: bool = True
+    is_public: bool = True
     
     # --- NOVO CAMPO ---
-    is_public: bool = True
-    # ------------------
+    anonymous: bool = False
     
     options: list[str]
     deadline: Optional[datetime] = None

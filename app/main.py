@@ -254,6 +254,7 @@ def create_poll_action(
     multiple_choice: bool = Form(False),
     check_ip: bool = Form(False),
     is_public: bool = Form(False),
+    anonymous: bool = Form(False),  # <--- RECEBENDO O CAMPO (Padrão False)
     deadline: str = Form(None),
     image_file: UploadFile = File(None),
     db: Session = Depends(get_db)
@@ -285,6 +286,7 @@ def create_poll_action(
         multiple_choice=multiple_choice,
         check_ip=check_ip,
         is_public=is_public,
+        anonymous=anonymous, # <--- PASSANDO PARA O SCHEMA
         deadline=deadline_dt,
         image_path=image_path
     )

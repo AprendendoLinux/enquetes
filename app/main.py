@@ -15,6 +15,8 @@ import shutil
 import os
 import uuid
 from datetime import datetime
+import io
+from PIL import Image
 
 # Imports do sistema
 from auth_utils import verify_token, get_password_hash, verify_password 
@@ -278,7 +280,7 @@ def create_poll_page(request: Request, db: Session = Depends(get_db)):
     return templates.TemplateResponse("create_poll.html", {"request": request, "user": user})
 
 @app.post("/create_poll")
-def create_poll_action(
+async def create_poll_action(
     request: Request,
     title: str = Form(...),
     description: str = Form(None),
@@ -286,7 +288,7 @@ def create_poll_action(
     multiple_choice: bool = Form(False),
     check_ip: bool = Form(False),
     is_public: bool = Form(False),
-    anonymous: bool = Form(False),  # <--- RECEBENDO O CAMPO (Padrão False)
+    anonymous: bool = Form(False),
     deadline: str = Form(None),
     image_file: UploadFile = File(None),
     db: Session = Depends(get_db)
@@ -297,12 +299,65 @@ def create_poll_action(
     user = crud.get_user_by_email(db, email)
 
     image_path = None
+    
+    # --- NOVA LÓGICA DE OTIMIZAÇÃO DE IMAGEM ---
     if image_file and image_file.filename:
-        safe_filename = f"{uuid.uuid4()}_{image_file.filename}"
-        file_location = os.path.join(UPLOAD_DIR, safe_filename)
-        with open(file_location, "wb") as buffer:
-            shutil.copyfileobj(image_file.file, buffer)
-        image_path = f"/static/uploads/{safe_filename}"
+        try:
+            # 1. Lê o arquivo da memória
+            contents = await image_file.read()
+            img = Image.open(io.BytesIO(contents))
+
+            # 2. Converte para RGB (Obrigatório para salvar PNG transparente como JPG)
+            if img.mode in ("RGBA", "P"):
+                img = img.convert("RGB")
+
+            # 3. Redimensiona se for muito grande (Max 1200px de largura é ideal para WhatsApp)
+            # max_width = 1200
+            # if img.width > max_width:
+            #     ratio = max_width / float(img.width)
+            #     new_height = int((float(img.height) * float(ratio)))
+            #     img = img.resize((max_width, new_height), Image.Resampling.LANCZOS)
+
+            # 3. Redimensiona para resolução FIXA (686x386)
+            # Isso garante o tamanho exato, mas pode "esticar" ou "apertar" a imagem
+            # se ela não tiver a mesma proporção.
+            img = img.resize((686, 386), Image.Resampling.LANCZOS)
+
+            # 4. Loop de Compressão para garantir < 100KB
+            quality = 90
+            output = io.BytesIO()
+            
+            while True:
+                output.seek(0)
+                output.truncate()
+                # Salva no buffer com a qualidade atual
+                img.save(output, format="JPEG", quality=quality, optimize=True)
+                
+                # Verifica o tamanho em KB
+                size_kb = output.tell() / 1024
+                
+                # --- ALTERAÇÃO AQUI (De 100 para 950) ---
+                if size_kb <= 95 or quality <= 20: 
+                    break
+                
+                # Se ainda estiver maior que 950kb, reduz a qualidade
+                quality -= 10
+
+            # 5. Gera nome único e Salva no disco
+            # Forçamos a extensão .jpg, não importa o original
+            safe_filename = f"{uuid.uuid4()}.jpg"
+            file_location = os.path.join(UPLOAD_DIR, safe_filename)
+            
+            with open(file_location, "wb") as f:
+                f.write(output.getvalue())
+                
+            image_path = f"/static/uploads/{safe_filename}"
+            
+        except Exception as e:
+            logger.error(f"Erro ao processar imagem: {e}")
+            # Se der erro na compressão, segue sem imagem ou trata o erro
+            pass
+    # ---------------------------------------------
 
     deadline_dt = None
     if deadline:
@@ -318,7 +373,7 @@ def create_poll_action(
         multiple_choice=multiple_choice,
         check_ip=check_ip,
         is_public=is_public,
-        anonymous=anonymous, # <--- PASSANDO PARA O SCHEMA
+        anonymous=anonymous,
         deadline=deadline_dt,
         image_path=image_path
     )

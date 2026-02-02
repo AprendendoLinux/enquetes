@@ -106,12 +106,19 @@
 
 
                 <div class="d-flex justify-content-center align-items-center gap-2 mb-4 poll-meta">
+                    {# 1. Indicador de Tempo #}
                     {% if poll.deadline %}
                         <span class="text-danger bg-danger bg-opacity-10 px-2 py-1 rounded"><i class="bi bi-clock me-1"></i> Encerra em {{ poll.deadline.strftime('%d/%m às %H:%M') }}</span>
                     {% else %}
                         <span class="text-success bg-success bg-opacity-10 px-2 py-1 rounded"><i class="bi bi-infinity me-1"></i> Tempo ilimitado</span>
                     {% endif %}
                     
+                    {# 2. NOVO BOTÃO DE RESULTADOS (Inserido Aqui) #}
+                    <a href="/polls/{{ poll.public_link }}/results" class="btn btn-sm btn-light rounded-pill border px-2 py-1 text-decoration-none text-dark" style="font-size: 0.8rem;" title="Ver Resultados Parciais">
+                        <i class="bi bi-bar-chart-fill me-1"></i> Resultados
+                    </a>
+
+                    {# 3. Botão de Detalhes (Se houver descrição) #}
                     {% if poll.description %}
                     <button type="button" class="btn btn-sm btn-light rounded-pill border px-2 py-1" style="font-size: 0.8rem;" data-bs-toggle="modal" data-bs-target="#descModal">
                         <i class="bi bi-info-circle me-1"></i> Detalhes

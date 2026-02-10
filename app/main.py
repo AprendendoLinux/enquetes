@@ -117,6 +117,8 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 
 templates = Jinja2Templates(directory="templates")
 
+templates.env.globals["app_version"] = os.environ.get("APP_VERSION", "dev-local")
+
 # Incluindo Rotas
 app.include_router(auth.router, prefix="/auth", tags=["auth"])
 app.include_router(poll.router, prefix="/polls", tags=["polls"])

@@ -5,6 +5,7 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
 from datetime import datetime
+from main import templates
 
 from database import get_db
 from auth_utils import verify_token, get_password_hash, create_access_token

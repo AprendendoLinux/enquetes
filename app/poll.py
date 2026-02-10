@@ -1,3 +1,4 @@
+from main import templates
 from fastapi import APIRouter, Depends, HTTPException, Request, Form, Response, Cookie
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.security import OAuth2PasswordBearer

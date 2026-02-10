@@ -116,7 +116,6 @@ app = FastAPI(lifespan=lifespan)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 templates = Jinja2Templates(directory="templates")
-
 templates.env.globals["app_version"] = os.environ.get("APP_VERSION", "dev-local")
 
 # Incluindo Rotas

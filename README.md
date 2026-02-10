@@ -147,3 +147,5 @@ docker-compose exec app /bin/bash
 docker-compose restart app
 
 ```
+
+Teste Stack Automática

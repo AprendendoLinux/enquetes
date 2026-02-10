@@ -12,7 +12,6 @@ from auth_utils import verify_token, get_password_hash, create_access_token
 import crud, models
 
 router = APIRouter()
-templates = Jinja2Templates(directory="templates")
 
 UPLOAD_DIR = "static/uploads"
 

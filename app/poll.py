@@ -16,7 +16,6 @@ MAX_VOTES_PER_IP = 3
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/token")
 
 router = APIRouter()
-templates = Jinja2Templates(directory="templates")
 
 # --- FUNÇÃO AUXILIAR PARA NAVBAR ---
 def get_optional_user(request: Request, db: Session):

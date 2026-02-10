@@ -17,6 +17,7 @@ import uuid
 from datetime import datetime
 import io
 from PIL import Image
+from database import templates
 
 # Imports do sistema
 from auth_utils import verify_token, get_password_hash, verify_password 
@@ -114,9 +115,6 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
-
-templates = Jinja2Templates(directory="templates")
-templates.env.globals["app_version"] = os.environ.get("APP_VERSION", "dev-local")
 
 # Incluindo Rotas
 app.include_router(auth.router, prefix="/auth", tags=["auth"])
